@@ -1,0 +1,147 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with theme preference",
+      "type": "object",
+      "properties": {
+        "theme": { "type": "string", "enum": ["pink", "blue", "black", "green", "purple"], "description": "Selected theme color" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["theme", "createdAt"]
+    },
+    "Habit": {
+      "title": "Habit",
+      "description": "Habit Tracker Goal",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string", "description": "Goal description" },
+        "completed": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["text", "completed", "createdAt", "updatedAt"]
+    },
+    "Mission": {
+      "title": "Mission",
+      "description": "Monthly mission",
+      "type": "object",
+      "properties": {
+        "month": { "type": "string" },
+        "missionText": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["month", "missionText", "updatedAt"]
+    },
+    "Memory": {
+      "title": "Memory",
+      "description": "Memory photo or draggable note",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "content": { "type": "string", "description": "Text content for note" },
+        "type": { "type": "string", "enum": ["photo", "note"] },
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "rotate": { "type": "number" },
+        "color": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["type", "createdAt"]
+    },
+    "KeyDate": {
+      "title": "KeyDate",
+      "description": "Important date entry",
+      "type": "object",
+      "properties": {
+        "month": { "type": "string" },
+        "line": { "type": "number" },
+        "date": { "type": "string" },
+        "event": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["month", "line", "updatedAt"]
+    },
+    "Journal": {
+      "title": "Journal",
+      "description": "Monthly mini journal",
+      "type": "object",
+      "properties": {
+        "month": { "type": "number" },
+        "content": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["month", "content", "updatedAt"]
+    },
+    "Subscription": {
+      "title": "Subscription",
+      "description": "Subscription entry",
+      "type": "object",
+      "properties": {
+        "platform": { "type": "string" },
+        "channel": { "type": "string" },
+        "order": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["platform", "channel", "order", "updatedAt"]
+    },
+    "Membership": {
+      "title": "Membership",
+      "description": "Membership entry",
+      "type": "object",
+      "properties": {
+        "channel": { "type": "string" },
+        "expired": { "type": "string" },
+        "order": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["channel", "expired", "order", "updatedAt"]
+    },
+    "DailyNote": {
+      "title": "DailyNote",
+      "description": "Daily notes for the calendar",
+      "type": "object",
+      "properties": {
+        "dateId": { "type": "string", "description": "Format YYYY-MM-DD" },
+        "content": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["dateId", "content", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profile with theme"
+    },
+    "/users/{userId}/habits/{habitId}": {
+      "schema": { "$ref": "#/entities/Habit" },
+      "description": "User habits"
+    },
+    "/users/{userId}/missions/{docId}": {
+      "schema": { "$ref": "#/entities/Mission" },
+      "description": "User monthly missions"
+    },
+    "/users/{userId}/memories/{memoryId}": {
+      "schema": { "$ref": "#/entities/Memory" },
+      "description": "User memories"
+    },
+    "/users/{userId}/journals/{journalId}": {
+      "schema": { "$ref": "#/entities/Journal" },
+      "description": "User journals"
+    },
+    "/users/{userId}/subscriptions/{subId}": {
+      "schema": { "$ref": "#/entities/Subscription" },
+      "description": "User subscriptions"
+    },
+    "/users/{userId}/memberships/{memId}": {
+      "schema": { "$ref": "#/entities/Membership" },
+      "description": "User memberships"
+    },
+    "/users/{userId}/dailynotes/{noteId}": {
+      "schema": { "$ref": "#/entities/DailyNote" },
+      "description": "Daily calendar notes"
+    }
+  }
+}
