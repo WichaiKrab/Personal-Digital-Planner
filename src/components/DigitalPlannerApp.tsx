@@ -333,18 +333,17 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
           <div className="p-4 md:p-6 flex justify-between items-center border-b border-gray-100">
             <div>
               <h1 className={`text-3xl md:text-5xl font-display font-bold ${theme.text} tracking-tight uppercase`}>{format(currentDate, 'MMM')}</h1>
-              <p className={`text-xs md:text-sm mt-1 font-medium text-gray-500`}>{format(currentDate, 'yyyy')}</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
               <button onClick={() => setCurrentDate(subMonths(currentDate, 1))} className="p-2 rounded-full hover:bg-gray-100 text-gray-600 transition-colors"><ChevronLeft size={24} /></button>
               <button 
                 onClick={() => {
                   const today = new Date();
                   setCurrentDate(new Date(selectedYear, today.getMonth(), today.getDate()));
                 }} 
-                className={`hidden md:block px-4 py-1 rounded-full border ${theme.border} text-xs font-bold ${theme.textMuted} hover:${theme.primary} hover:text-gray-800 transition-all`}
+                className={`px-6 py-2 rounded-full border ${theme.border} text-lg md:text-xl font-display font-bold ${theme.text} hover:${theme.primary} transition-all shadow-sm bg-white active:scale-95`}
               >
-                Today
+                {format(currentDate, 'yyyy')}
               </button>
               <button onClick={() => setCurrentDate(addMonths(currentDate, 1))} className="p-2 rounded-full hover:bg-gray-100 text-gray-600 transition-colors"><ChevronRight size={24} /></button>
             </div>
