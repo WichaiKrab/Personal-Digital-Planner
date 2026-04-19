@@ -9,6 +9,7 @@ import { db } from '../firebase';
 import { collection, doc, onSnapshot, query, setDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, addDoc } from 'firebase/firestore';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isToday, addMonths, subMonths } from 'date-fns';
 import { motion } from 'motion/react';
+import Swal from 'sweetalert2';
 
 export default function App() {
   return <DigitalPlannerApp userId="default-user" />;
@@ -18,6 +19,7 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
   const [activeTab, setActiveTab] = useState('index');
   const [currentTheme, setCurrentTheme] = useState('pink');
   const [isThemeOpen, setIsThemeOpen] = useState(false);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   
   const [habits, setHabits] = useState<any[]>([]);
   const [missions, setMissions] = useState<any[]>([]);
@@ -52,18 +54,20 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
           }
       }, (error) => console.error("Snapshot error (user):", error));
       
-      const unsubHabits = onSnapshot(query(collection(db, `users/${userId}/habits`), orderBy('createdAt', 'asc')), (snapshot) => setHabits(snapshot.docs.map(d => ({ id: d.id, ...d.data() }))), (error) => console.error("Snapshot error (habits):", error));
-      const unsubMissions = onSnapshot(collection(db, `users/${userId}/missions`), (snapshot) => setMissions(snapshot.docs.map(d => ({ id: d.id, ...d.data() }))), (error) => console.error("Snapshot error (missions):", error));
-      const unsubMemories = onSnapshot(query(collection(db, `users/${userId}/memories`), orderBy('createdAt', 'desc')), (snapshot) => setMemories(snapshot.docs.map(d => ({ id: d.id, ...d.data() }))), (error) => console.error("Snapshot error (memories):", error));
-      const unsubJournals = onSnapshot(collection(db, `users/${userId}/journals`), (snapshot) => setJournals(snapshot.docs.map(d => ({ id: d.id, ...d.data() }))), (error) => console.error("Snapshot error (journals):", error));
-      const unsubSubs = onSnapshot(query(collection(db, `users/${userId}/subscriptions`), orderBy('order', 'asc')), (snapshot) => setSubscriptions(snapshot.docs.map(d => ({ id: d.id, ...d.data() }))), (error) => console.error("Snapshot error (subs):", error));
-      const unsubMems = onSnapshot(query(collection(db, `users/${userId}/memberships`), orderBy('order', 'asc')), (snapshot) => setMemberships(snapshot.docs.map(d => ({ id: d.id, ...d.data() }))), (error) => console.error("Snapshot error (mems):", error));
-      const unsubDailyNotes = onSnapshot(collection(db, `users/${userId}/dailynotes`), (snapshot) => setDailyNotes(snapshot.docs.map(d => ({ id: d.id, ...d.data() }))), (error) => console.error("Snapshot error (dailynotes):", error));
+      const yearPath = `users/${userId}/years/${selectedYear}`;
+      
+      const unsubHabits = onSnapshot(query(collection(db, `${yearPath}/habits`), orderBy('createdAt', 'asc')), (snapshot) => setHabits(snapshot.docs.map(d => ({ id: d.id, ...d.data() }))), (error) => console.error("Snapshot error (habits):", error));
+      const unsubMissions = onSnapshot(collection(db, `${yearPath}/missions`), (snapshot) => setMissions(snapshot.docs.map(d => ({ id: d.id, ...d.data() }))), (error) => console.error("Snapshot error (missions):", error));
+      const unsubMemories = onSnapshot(query(collection(db, `${yearPath}/memories`), orderBy('createdAt', 'desc')), (snapshot) => setMemories(snapshot.docs.map(d => ({ id: d.id, ...d.data() }))), (error) => console.error("Snapshot error (memories):", error));
+      const unsubJournals = onSnapshot(collection(db, `${yearPath}/journals`), (snapshot) => setJournals(snapshot.docs.map(d => ({ id: d.id, ...d.data() }))), (error) => console.error("Snapshot error (journals):", error));
+      const unsubSubs = onSnapshot(query(collection(db, `${yearPath}/subscriptions`), orderBy('order', 'asc')), (snapshot) => setSubscriptions(snapshot.docs.map(d => ({ id: d.id, ...d.data() }))), (error) => console.error("Snapshot error (subs):", error));
+      const unsubMems = onSnapshot(query(collection(db, `${yearPath}/memberships`), orderBy('order', 'asc')), (snapshot) => setMemberships(snapshot.docs.map(d => ({ id: d.id, ...d.data() }))), (error) => console.error("Snapshot error (mems):", error));
+      const unsubDailyNotes = onSnapshot(collection(db, `${yearPath}/dailynotes`), (snapshot) => setDailyNotes(snapshot.docs.map(d => ({ id: d.id, ...d.data() }))), (error) => console.error("Snapshot error (dailynotes):", error));
       
       return () => { 
         unsubUser(); unsubHabits(); unsubMissions(); unsubMemories(); unsubJournals(); unsubSubs(); unsubMems(); unsubDailyNotes(); 
       };
-    }, [userId]);
+    }, [userId, selectedYear]);
 
   const changeTheme = async (newTheme: string) => {
     setCurrentTheme(newTheme);
@@ -135,7 +139,11 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
   const IndexView = () => (
     <div className={`h-full p-6 md:p-10 rounded-3xl ${theme.surface} border ${theme.border} shadow-sm animate-in fade-in zoom-in-95 duration-300 flex flex-col`}>
       <div className="flex-1 flex flex-col">
-        <h2 className={`text-3xl font-display font-bold mb-10 ${theme.text} text-center tracking-widest uppercase`}>Index</h2>
+        <div className="flex items-center justify-center gap-6 mb-10">
+            <button onClick={() => setSelectedYear(selectedYear - 1)} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><ChevronLeft size={24}/></button>
+            <h2 className={`text-3xl font-display font-bold ${theme.text} text-center tracking-widest uppercase`}>{selectedYear} Index</h2>
+            <button onClick={() => setSelectedYear(selectedYear + 1)} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><ChevronRight size={24}/></button>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 flex-grow overflow-y-auto pr-2 pb-10">
           <div className="space-y-8">
             <div>
@@ -144,9 +152,13 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
                 {[
                   {label: 'Calendar', tab:'calendar'}, 
                   {label: 'Mission of the Year', tab:'mission'}, 
-                  {label: 'Room of Memories', tab:'memories'}
+                  {label: 'Room of Memories', tab:'memories'},
+                  {label: 'Key Date', tab:'keydate'}
                 ].map(item => (
-                  <li key={item.label} onClick={() => setActiveTab(item.tab)} className={`cursor-pointer hover:${theme.accentText} transition-colors flex items-center gap-2 group`}>
+                  <li key={item.label} onClick={() => {
+                      if (item.tab === 'calendar') setCurrentDate(new Date());
+                      setActiveTab(item.tab);
+                  }} className={`cursor-pointer hover:${theme.accentText} transition-colors flex items-center gap-2 group`}>
                     <div className={`w-1.5 h-1.5 rounded-full ${theme.primary} group-hover:scale-125 transition-transform`}></div> {item.label}
                   </li>
                 ))}
@@ -155,27 +167,29 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
             <div>
               <h3 className="font-bold text-gray-400 text-xs tracking-widest uppercase mb-3 border-b pb-2">Monthly Plan</h3>
               <div className="grid grid-cols-4 gap-2 text-xs text-gray-600">
-                {months.map(m => <div key={m} onClick={() => setActiveTab('calendar')} className={`cursor-pointer hover:${theme.primary} hover:bg-opacity-50 py-1.5 rounded text-center transition-colors font-medium`}>{m}</div>)}
-              </div>
-            </div>
-          </div>
-          <div className="space-y-8">
-            <div>
-              <h3 className="font-bold text-gray-400 text-xs tracking-widest uppercase mb-3 border-b pb-2">Weekly & Daily</h3>
-              <ul className="space-y-3 text-gray-700 text-sm font-medium">
-                 {[ {label: 'Key Date', tab:'keydate'}].map(item => (
-                  <li key={item.label} onClick={() => setActiveTab(item.tab)} className={`cursor-pointer hover:${theme.accentText} transition-colors flex items-center gap-2 group`}>
-                    <div className={`w-1.5 h-1.5 rounded-full ${theme.primary} group-hover:scale-125 transition-transform`}></div> {item.label}
-                  </li>
+                {months.map((m, idx) => (
+                    <div 
+                        key={m} 
+                        onClick={() => {
+                            setCurrentDate(new Date(selectedYear, idx, 1));
+                            setActiveTab('calendar');
+                        }} 
+                        className={`cursor-pointer hover:${theme.primary} hover:bg-opacity-50 py-1.5 rounded text-center transition-colors font-medium`}
+                    >
+                        {m}
+                    </div>
                 ))}
-              </ul>
+              </div>
             </div>
           </div>
           <div className="space-y-8">
             <div>
               <h3 className="font-bold text-gray-400 text-xs tracking-widest uppercase mb-3 border-b pb-2">More</h3>
                <ul className="space-y-3 text-gray-700 text-sm font-medium">
-                 {[ {label: 'Mini Journal', tab:'journal'}, {label: 'Subscription & Membership', tab:'subscription'}].map(item => (
+                 {[ 
+                   {label: 'Mini Journal', tab:'journal'}, 
+                   {label: 'Subscription & Membership', tab:'subscription'}
+                 ].map(item => (
                   <li key={item.label} onClick={() => setActiveTab(item.tab)} className={`cursor-pointer hover:${theme.accentText} transition-colors flex items-center gap-2 group`}>
                     <div className={`w-1.5 h-1.5 rounded-full ${theme.primary} group-hover:scale-125 transition-transform`}></div> {item.label}
                   </li>
@@ -192,7 +206,7 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
     const handleAddHabit = async (e: React.FormEvent) => {
       e.preventDefault();
       if (newGoal.trim()) {
-        await addDoc(collection(db, `users/${userId}/habits`), {
+        await addDoc(collection(db, `users/${userId}/years/${selectedYear}/habits`), {
           text: newGoal.trim(), completed: false, createdAt: serverTimestamp(), updatedAt: serverTimestamp()
         });
         setNewGoal('');
@@ -201,23 +215,39 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
     };
     
     const saveDailyNote = async (dateId: string, content: string) => {
-        await setDoc(doc(db, `users/${userId}/dailynotes/${dateId}`), {
+        await setDoc(doc(db, `users/${userId}/years/${selectedYear}/dailynotes/${dateId}`), {
             dateId, content, updatedAt: serverTimestamp()
         });
     };
 
     const toggleHabit = async (habit: any) => {
-      await updateDoc(doc(db, `users/${userId}/habits/${habit.id}`), {
+      await updateDoc(doc(db, `users/${userId}/years/${selectedYear}/habits/${habit.id}`), {
         completed: !habit.completed, updatedAt: serverTimestamp()
       });
     };
     const deleteHabit = async (habitId: string) => {
-        if(window.confirm("Delete this goal?")) { await deleteDoc(doc(db, `users/${userId}/habits/${habitId}`)); }
+        const result = await Swal.fire({
+            title: 'Delete this goal?',
+            text: "This action cannot be undone.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#f43f5e',
+            cancelButtonColor: '#94a3b8',
+            confirmButtonText: 'Delete!',
+            cancelButtonText: 'Cancel',
+            customClass: {
+                popup: 'rounded-3xl',
+                title: 'font-display',
+                confirmButton: 'rounded-xl font-bold px-6 py-2 mx-1',
+                cancelButton: 'rounded-xl font-bold px-6 py-2 mx-1'
+            }
+        });
+        if(result.isConfirmed) { await deleteDoc(doc(db, `users/${userId}/years/${selectedYear}/habits/${habitId}`)); }
     };
 
     const updateHabitText = async (habitId: string, newText: string) => {
         if (!newText.trim()) return;
-        await updateDoc(doc(db, `users/${userId}/habits/${habitId}`), {
+        await updateDoc(doc(db, `users/${userId}/years/${selectedYear}/habits/${habitId}`), {
             text: newText.trim(), updatedAt: serverTimestamp()
         });
     };
@@ -238,6 +268,7 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
                 </div>
                 <input 
                   type="text"
+                  key={`${habit.id}-${habit.text}`}
                   defaultValue={habit.text}
                   onBlur={(e) => updateHabitText(habit.id, e.target.value)}
                   className={`text-sm md:text-base flex-1 leading-tight bg-transparent border-none outline-none focus:ring-1 focus:ring-rose-100 rounded px-1 ${habit.completed ? 'text-gray-400 line-through' : 'text-gray-700'}`}
@@ -294,6 +325,7 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
                     <div key={dateId} className={`relative flex flex-col p-1.5 md:p-2 rounded-xl border transition-all min-h-[70px] md:min-h-[100px] ${isToday(day) ? `bg-white border-2 ${theme.border} ring-2 ring-white shadow-md z-10 scale-105` : 'border-gray-100 bg-white/60 hover:bg-white hover:border-gray-200 shadow-sm'}`}>
                       <span className={`text-[10px] md:text-xs font-bold mb-1 ${getDay(day) === 0 || getDay(day) === 6 ? theme.textMuted : 'text-gray-500'}`}>{format(day, 'd')}</span>
                       <textarea 
+                        key={`${dateId}-${note?.content}`}
                         defaultValue={note?.content || ''}
                         onBlur={(e) => saveDailyNote(dateId, e.target.value)}
                         placeholder="..."
@@ -311,13 +343,13 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
 
   const MissionView = () => {
     const handleMissionChange = async (month: string, text: string) => {
-        await setDoc(doc(db, `users/${userId}/missions/${month}`), { month, missionText: text, updatedAt: serverTimestamp() }, { merge: true });
+        await setDoc(doc(db, `users/${userId}/years/${selectedYear}/missions/${month}`), { month, missionText: text, updatedAt: serverTimestamp() }, { merge: true });
     };
     return (
       <div className={`h-full p-4 md:p-8 rounded-3xl ${theme.surface} border ${theme.border} shadow-sm animate-in fade-in duration-300 flex flex-col`}>
         <div className="flex justify-between items-center mb-6">
-          <h2 className={`text-2xl md:text-3xl font-display font-bold ${theme.text} uppercase tracking-widest`}>Mission of the Year</h2>
-          <span className="text-gray-400 font-medium tracking-widest">2026</span>
+          <h2 className={`text-2xl md:text-3xl font-display font-bold ${theme.text} uppercase tracking-widest`}>Mission of the Year {selectedYear}</h2>
+          <span className="text-gray-400 font-medium tracking-widest">{selectedYear}</span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 flex-grow overflow-y-auto">
           {fullMonths.map((m) => {
@@ -328,6 +360,7 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
                 <div className="p-3 flex-grow flex flex-col">
                   <h3 className="text-center font-bold text-gray-500 text-xs uppercase tracking-wider mb-2">{m}</h3>
                   <textarea 
+                    key={`${m}-${missionDoc?.missionText}`}
                     defaultValue={missionDoc?.missionText || ''}
                     onBlur={(e) => handleMissionChange(m, e.target.value)}
                     className="w-full flex-grow bg-transparent resize-none outline-none text-sm text-gray-700 placeholder-gray-300"
@@ -343,38 +376,211 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
   };
 
   const MemoriesView = () => {
+    const containerRef = React.useRef<HTMLDivElement>(null);
+
     const addMemory = async (type: 'photo' | 'note') => {
-        const title = window.prompt(type === 'photo' ? "Memory Title:" : "Note Content:");
-        if (title) {
-            await addDoc(collection(db, `users/${userId}/memories`), {
-                type,
-                title: type === 'photo' ? title : '',
-                content: type === 'note' ? title : '',
-                x: Math.random() * 200 + 100,
-                y: Math.random() * 200 + 100,
-                rotate: (Math.random() - 0.5) * 20,
-                color: type === 'note' ? ['#fef3c7', '#dcfce7', '#dbeafe', '#fce7f3'][Math.floor(Math.random() * 4)] : '#ffffff',
-                createdAt: serverTimestamp()
+        if (type === 'photo') {
+            const { value: file } = await Swal.fire({
+                title: 'Select Photo',
+                input: 'file',
+                inputAttributes: {
+                    'accept': 'image/*',
+                    'aria-label': 'Upload your photo memory'
+                },
+                showCancelButton: true,
+                confirmButtonColor: '#f43f5e',
+                cancelButtonColor: '#94a3b8',
+                confirmButtonText: 'Select Image',
+                customClass: {
+                    popup: 'rounded-3xl',
+                    title: 'font-display font-bold',
+                    input: 'rounded-xl'
+                }
             });
+
+            if (file) {
+                if (file.size > 800000) { // Approx 800KB limit for base64 in Firestore (1MB doc limit)
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'File too large',
+                        text: 'Please select an image smaller than 800KB.',
+                        confirmButtonColor: '#f43f5e',
+                        customClass: { popup: 'rounded-3xl' }
+                    });
+                    return;
+                }
+
+                const reader = new FileReader();
+                Swal.fire({
+                    title: 'Processing...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    },
+                    customClass: { popup: 'rounded-3xl' }
+                });
+
+                reader.onload = async (e) => {
+                    const base64 = e.target?.result as string;
+                    Swal.close();
+                    
+                    const { value: title } = await Swal.fire({
+                        title: 'Give it a title',
+                        input: 'text',
+                        inputPlaceholder: 'My awesome memory...',
+                        showCancelButton: true,
+                        confirmButtonColor: '#f43f5e',
+                        cancelButtonColor: '#94a3b8',
+                        confirmButtonText: 'Add to Room',
+                        customClass: {
+                            popup: 'rounded-3xl',
+                            title: 'font-display font-bold',
+                            input: 'rounded-xl'
+                        }
+                    });
+
+                    if (title !== undefined) {
+                        try {
+                            await addDoc(collection(db, `users/${userId}/years/${selectedYear}/memories`), {
+                                type: 'photo',
+                                title: title || 'Memory',
+                                imageUrl: base64,
+                                x: Math.random() * (window.innerWidth < 768 ? 100 : 600),
+                                y: Math.random() * (window.innerWidth < 768 ? 200 : 300),
+                                rotate: (Math.random() - 0.5) * 20,
+                                color: '#ffffff',
+                                createdAt: serverTimestamp()
+                            });
+                            Swal.fire({
+                                icon: 'success',
+                                toast: true,
+                                position: 'top-end',
+                                timer: 2000,
+                                showConfirmButton: false,
+                                title: 'Added photo!'
+                            });
+                        } catch (err: any) {
+                            console.error(err);
+                            const msg = err?.message || 'Something went wrong while saving.';
+                            Swal.fire({ icon: 'error', title: 'Oops...', text: msg });
+                        }
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        } else {
+            const stickerColors = [
+                { name: 'Sand', value: '#fef3c7' },
+                { name: 'Mint', value: '#dcfce7' },
+                { name: 'Sky', value: '#dbeafe' },
+                { name: 'Rose', value: '#fce7f3' },
+                { name: 'Lavender', value: '#ede9fe' },
+                { name: 'Cloud', value: '#f3f4f6' }
+            ];
+
+            const { value: formValues } = await Swal.fire({
+                title: 'Add New Note',
+                html: `
+                    <textarea id="swal-note-text" class="swal2-textarea" placeholder="Write your message here..." style="margin-bottom: 20px;"></textarea>
+                    <div style="display: flex; justify-content: center; gap: 12px; margin-bottom: 10px;">
+                        ${stickerColors.map(c => `
+                            <div class="color-option" data-color="${c.value}" title="${c.name}" style="
+                                width: 32px; height: 32px; border-radius: 50%; background-color: ${c.value}; 
+                                cursor: pointer; border: 2px solid transparent; transition: all 0.2s;
+                                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                            " onclick="
+                                document.querySelectorAll('.color-option').forEach(el => el.style.borderColor = 'transparent');
+                                this.style.borderColor = '#f43f5e';
+                                window._swalSelectedColor = '${c.value}';
+                            "></div>
+                        `).join('')}
+                    </div>
+                `,
+                didOpen: () => {
+                    // Pre-select first color
+                    const firstOption = document.querySelector('.color-option') as HTMLElement;
+                    if (firstOption) firstOption.click();
+                },
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonColor: '#f43f5e',
+                cancelButtonColor: '#94a3b8',
+                confirmButtonText: 'Add to Room',
+                customClass: {
+                    popup: 'rounded-3xl',
+                    title: 'font-display font-bold',
+                },
+                preConfirm: () => {
+                    const text = (document.getElementById('swal-note-text') as HTMLTextAreaElement).value;
+                    const color = (window as any)._swalSelectedColor;
+                    if (!text) {
+                        Swal.showValidationMessage('Please write a message');
+                        return false;
+                    }
+                    return { text, color };
+                }
+            });
+
+            if (formValues) {
+                try {
+                    await addDoc(collection(db, `users/${userId}/years/${selectedYear}/memories`), {
+                        type: 'note',
+                        content: formValues.text.trim(),
+                        x: Math.random() * (window.innerWidth < 768 ? 100 : 600),
+                        y: Math.random() * (window.innerWidth < 768 ? 200 : 300),
+                        rotate: (Math.random() - 0.5) * 20,
+                        color: formValues.color,
+                        createdAt: serverTimestamp()
+                    });
+                    Swal.fire({
+                        icon: 'success',
+                        toast: true,
+                        position: 'top-end',
+                        timer: 2000,
+                        showConfirmButton: false,
+                        title: 'Added note!'
+                    });
+                } catch (err: any) {
+                    console.error(err);
+                    const msg = err?.message || 'Something went wrong.';
+                    Swal.fire({ icon: 'error', title: 'Oops...', text: msg });
+                }
+            }
         }
     };
     const updateMemoryPos = async (id: string, x: number, y: number) => {
-        await updateDoc(doc(db, `users/${userId}/memories/${id}`), { x, y });
+        await updateDoc(doc(db, `users/${userId}/years/${selectedYear}/memories/${id}`), { x, y });
     };
     const deleteMemory = async (id: string) => {
-        if(window.confirm("Delete this memory?")) await deleteDoc(doc(db, `users/${userId}/memories/${id}`));
+        const result = await Swal.fire({
+            title: 'Delete this memory?',
+            text: "This action cannot be undone.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#f43f5e',
+            cancelButtonColor: '#94a3b8',
+            confirmButtonText: 'Delete!',
+            cancelButtonText: 'Cancel',
+            customClass: {
+                popup: 'rounded-3xl',
+                title: 'font-display',
+                confirmButton: 'rounded-xl font-bold px-6 py-2 mx-1',
+                cancelButton: 'rounded-xl font-bold px-6 py-2 mx-1'
+            }
+        });
+        if(result.isConfirmed) await deleteDoc(doc(db, `users/${userId}/years/${selectedYear}/memories/${id}`));
     };
     return (
       <div className={`min-h-[500px] h-[calc(100vh-200px)] md:h-[600px] p-6 rounded-3xl ${theme.surface} border ${theme.border} flex flex-col relative overflow-hidden`}
            style={{ backgroundImage: 'radial-gradient(#cbd5e1 1.5px, transparent 1.5px)', backgroundSize: '32px 32px' }}>
         <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-6 py-3 rounded-full shadow-md z-30 flex items-center gap-4">
-          <h2 className={`text-lg font-display font-bold ${theme.text} uppercase tracking-widest`}>Room of Memories</h2>
+          <h2 className={`text-lg font-display font-bold ${theme.text} uppercase tracking-widest`}>Room of Memories {selectedYear}</h2>
           <div className="flex gap-2">
              <button onClick={() => addMemory('photo')} className={`p-2 rounded-full ${theme.primary} hover:scale-110 active:scale-95 transition-all text-gray-800 shadow-sm`} title="Add Photo"><ImageIcon size={18}/></button>
              <button onClick={() => addMemory('note')} className={`p-2 rounded-full ${theme.primary} hover:scale-110 active:scale-95 transition-all text-gray-800 shadow-sm`} title="Add Note"><Type size={18}/></button>
           </div>
         </div>
-        <div className="relative w-full h-full pt-16 p-8 overflow-hidden z-20">
+        <div ref={containerRef} className="relative w-full h-full pt-16 p-8 overflow-hidden z-20">
             {memories.map((mem) => {
                 const isPhoto = mem.type === 'photo';
                 return (
@@ -382,28 +588,38 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
                         key={mem.id} 
                         drag 
                         dragMomentum={false}
+                        dragConstraints={containerRef}
+                        whileDrag={{ scale: 1.05, zIndex: 100, rotate: 0 }}
+                        whileTap={{ zIndex: 90 }}
                         onDragEnd={(_, info) => {
-                            const rect = (document.getElementById(`mem-${mem.id}`)?.parentElement as HTMLElement).getBoundingClientRect();
                             updateMemoryPos(mem.id, mem.x + info.offset.x, mem.y + info.offset.y);
                         }}
                         initial={{ x: mem.x || 0, y: mem.y || 0, rotate: mem.rotate || 0 }}
-                        className={`absolute cursor-move select-none p-3 pb-8 rounded shadow-xl border border-gray-100 group transition-shadow hover:shadow-2xl z-20`}
+                        animate={{ x: mem.x || 0, y: mem.y || 0 }}
+                        transition={{ type: 'spring', damping: 25, stiffness: 300, mass: 0.5 }}
+                        className={`absolute cursor-move select-none rounded shadow-xl border border-gray-100 group transition-shadow hover:shadow-2xl z-20 ${isPhoto ? 'p-2 pb-8' : 'p-4'}`}
                         style={{ 
                             backgroundColor: mem.color || '#ffffff', 
-                            width: isPhoto ? '180px' : '200px',
-                            minHeight: isPhoto ? '220px' : '100px'
+                            width: '180px',
+                            height: 'auto',
+                            left: 0,
+                            top: 0
                         }}
                     >
                         {isPhoto ? (
-                            <div className="w-full aspect-[4/3] bg-gray-50 flex items-center justify-center text-gray-300 rounded-sm border border-gray-100">
-                                <ImageIcon size={32} />
+                            <div className="w-full aspect-[4/3] bg-gray-50 flex items-center justify-center text-gray-300 rounded-sm border border-gray-100 overflow-hidden relative">
+                                {mem.imageUrl ? (
+                                    <img src={mem.imageUrl} alt={mem.title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                ) : (
+                                    <ImageIcon size={32} />
+                                )}
                             </div>
                         ) : (
-                            <div className="p-2 text-gray-700 italic font-medium leading-tight">
+                            <div className="text-gray-700 italic font-medium leading-tight break-words overflow-hidden whitespace-pre-wrap">
                                 "{mem.content}"
                             </div>
                         )}
-                        {isPhoto && <div className="absolute bottom-2 w-full text-center left-0 text-xs text-gray-600 font-bold truncate px-2">{mem.title}</div>}
+                        {isPhoto && <div className="absolute bottom-1.5 w-full text-center left-0 text-[10px] text-gray-500 font-bold truncate px-2 leading-none">{mem.title}</div>}
                         <button onClick={() => deleteMemory(mem.id)} className="absolute -top-3 -right-3 bg-red-500 text-white w-7 h-7 rounded-full hidden group-hover:flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors border-2 border-white"><Trash2 size={12} /></button>
                         <div className="absolute top-1 left-1 opacity-0 group-hover:opacity-100 transition-opacity"><Move size={12} className="text-gray-400" /></div>
                     </motion.div>
@@ -418,7 +634,7 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
   const KeyDateView = () => {
     const handleSave = async (month: string, line: number, type: 'date' | 'event', val: string) => {
         const id = `${month}_${line}`;
-        await setDoc(doc(db, `users/${userId}/keydates/${id}`), {
+        await setDoc(doc(db, `users/${userId}/years/${selectedYear}/keydates/${id}`), {
             month, line, [type]: val, updatedAt: serverTimestamp()
         }, { merge: true });
     };
@@ -426,17 +642,17 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
     const [kDates, setKDates] = useState<any[]>([]);
     useEffect(() => {
         if (!userId) return;
-        const unsub = onSnapshot(collection(db, `users/${userId}/keydates`), (snap) => {
+        const unsub = onSnapshot(collection(db, `users/${userId}/years/${selectedYear}/keydates`), (snap) => {
             setKDates(snap.docs.map(d => d.data()));
         }, (error) => {
             console.error("Firestore error in keydates:", error);
         });
         return unsub;
-    }, [userId]);
+    }, [userId, selectedYear]);
 
     return (
       <div className={`h-full p-6 md:p-8 rounded-3xl ${theme.surface} border ${theme.border} shadow-sm animate-in fade-in flex flex-col`}>
-        <h2 className={`text-2xl font-display font-bold mb-6 ${theme.text} uppercase tracking-widest`}>Key Date</h2>
+        <h2 className={`text-2xl font-display font-bold mb-6 ${theme.text} uppercase tracking-widest text-center`}>Key Date {selectedYear}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 flex-grow overflow-auto pb-4 pr-2">
           {fullMonths.map((month) => (
             <div key={month} className="flex flex-col border border-gray-200 rounded-2xl overflow-hidden bg-white shadow-lg hover:shadow-xl hover:border-gray-300 transition-all">
@@ -451,6 +667,7 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
                     <div key={line} className="flex h-10 border-b border-gray-100 last:border-0" >
                       <input 
                         type="text" 
+                        key={`${month}-${line}-date-${data?.date}`}
                         defaultValue={data?.date || ''}
                         onBlur={(e) => handleSave(month, line, 'date', e.target.value)}
                         className="w-1/4 border-r border-gray-100 bg-transparent text-xs text-center outline-none font-bold text-gray-800" 
@@ -458,6 +675,7 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
                       />
                       <input 
                         type="text" 
+                        key={`${month}-${line}-event-${data?.event}`}
                         defaultValue={data?.event || ''}
                         onBlur={(e) => handleSave(month, line, 'event', e.target.value)}
                         className="flex-1 bg-transparent text-sm outline-none px-3 text-gray-700" 
@@ -479,13 +697,13 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
     const currentJournal = journals.find(j => j.month === selectedMonth);
 
     const handleSave = async (content: string) => {
-        await setDoc(doc(db, `users/${userId}/journals/${selectedMonth}`), { month: selectedMonth, content, updatedAt: serverTimestamp() });
+        await setDoc(doc(db, `users/${userId}/years/${selectedYear}/journals/${selectedMonth}`), { month: selectedMonth, content, updatedAt: serverTimestamp() });
     };
 
     return (
       <div className={`h-[500px] md:h-[600px] p-4 md:p-8 rounded-3xl ${theme.surface} border ${theme.border} flex flex-col`}>
         <div className="flex justify-between items-start md:items-center mb-6 gap-4 border-b border-gray-100 pb-4">
-          <h2 className={`text-2xl font-display font-bold ${theme.text} uppercase tracking-widest`}>Mini Journal</h2>
+          <h2 className={`text-2xl font-display font-bold ${theme.text} uppercase tracking-widest`}>Mini Journal {selectedYear}</h2>
           <div className="flex flex-wrap gap-1">
             {Array.from({length: 12}, (_, i) => i + 1).map(m => (
               <button key={m} onClick={() => setSelectedMonth(m)}
@@ -502,7 +720,7 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
                backgroundPosition: '0 2.45rem'
              }}>
           <textarea 
-            key={selectedMonth}
+            key={`${selectedMonth}-${currentJournal?.content}`}
             defaultValue={currentJournal?.content || ''}
             onBlur={(e) => handleSave(e.target.value)}
             className="absolute inset-0 w-full h-full bg-transparent p-4 md:p-8 outline-none resize-none text-gray-700 leading-[2.5rem] text-sm md:text-base lg:text-lg align-top pt-[0.4rem]"
@@ -514,29 +732,26 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
   };
 
   const SubscriptionView = () => {
-    const subSlots = Array.from({length: 10}).map((_, i) => subscriptions.find(s => s.order === i) || { order: i, id: `sub-${i}`, platform: '', channel: '' });
-    const memSlots = Array.from({length: 10}).map((_, i) => memberships.find(s => s.order === i) || { order: i, id: `mem-${i}`, channel: '', expired: '' });
-
-    const [editingSub, setEditingSub] = useState<any>(null);
-    const [editingMem, setEditingMem] = useState<any>(null);
+    const subSlots = Array.from({length: 10}).map((_, i) => subscriptions.find(s => s.order === i) || { order: i, id: `sub_${i}`, platform: '', channel: '' });
+    const memSlots = Array.from({length: 10}).map((_, i) => memberships.find(s => s.order === i) || { order: i, id: `mem_${i}`, channel: '', expired: '' });
 
     const saveSub = async (order: number, field: string, value: string) => {
         const idStr = `sub_${order}`;
-        await setDoc(doc(db, `users/${userId}/subscriptions/${idStr}`), {
+        await setDoc(doc(db, `users/${userId}/years/${selectedYear}/subscriptions/${idStr}`), {
             order, [field]: value, updatedAt: serverTimestamp()
         }, { merge: true });
     };
 
     const saveMem = async (order: number, field: string, value: string) => {
         const idStr = `mem_${order}`;
-        await setDoc(doc(db, `users/${userId}/memberships/${idStr}`), {
+        await setDoc(doc(db, `users/${userId}/years/${selectedYear}/memberships/${idStr}`), {
             order, [field]: value, updatedAt: serverTimestamp()
         }, { merge: true });
     };
 
     return (
       <div className={`h-full p-4 md:p-8 rounded-3xl ${theme.surface} border ${theme.border} animate-in fade-in flex flex-col`}>
-        <h2 className={`text-2xl font-display font-bold mb-6 ${theme.text} text-center uppercase tracking-widest`}>Subscription & Membership</h2>
+        <h2 className={`text-2xl font-display font-bold mb-6 ${theme.text} text-center uppercase tracking-widest`}>Subscription & Membership {selectedYear}</h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 flex-grow overflow-auto pr-2 pb-8">
           
           <div className="border border-gray-200 rounded-2xl overflow-hidden flex flex-col bg-white h-fit shadow-lg">
@@ -550,12 +765,14 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
                     <div className="w-12 flex items-center justify-center text-xs font-bold text-gray-300">{i + 1}</div>
                     <input 
                         type="text" 
+                        key={`${item.id}-plat-${item.platform}`}
                         defaultValue={item.platform} 
                         onBlur={(e) => saveSub(i, 'platform', e.target.value)} 
                         className="w-1/3 border-r border-l border-gray-100 bg-transparent px-3 text-sm outline-none font-medium text-gray-700" 
                     />
                     <input 
                         type="text" 
+                        key={`${item.id}-chan-${item.channel}`}
                         defaultValue={item.channel} 
                         onBlur={(e) => saveSub(i, 'channel', e.target.value)} 
                         className="flex-1 bg-transparent px-3 text-sm outline-none text-gray-600" 
@@ -576,12 +793,14 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
                     <div className="w-12 flex items-center justify-center text-xs font-bold text-gray-300">{i + 1}</div>
                     <input 
                         type="text" 
+                        key={`${item.id}-chan-${item.channel}`}
                         defaultValue={item.channel} 
                         onBlur={(e) => saveMem(i, 'channel', e.target.value)} 
                         className="flex-1 border-r border-l border-gray-100 bg-transparent px-3 text-sm outline-none font-medium text-gray-700" 
                     />
                     <input 
                         type="text" 
+                        key={`${item.id}-exp-${item.expired}`}
                         defaultValue={item.expired} 
                         onBlur={(e) => saveMem(i, 'expired', e.target.value)} 
                         className="w-24 bg-transparent px-2 text-xs outline-none text-center font-bold text-teal-600" 

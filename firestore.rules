@@ -45,13 +45,13 @@ service cloud.firestore {
     function isValidMemory(data) {
       return data.keys().hasAll(['type', 'createdAt']) &&
              data.type is string && (data.type == 'photo' || data.type == 'note') &&
-             (data.title == null || (data.title is string && data.title.size() <= 200)) &&
-             (data.content == null || (data.content is string && data.content.size() <= 1000)) &&
-             (data.imageUrl == null || (data.imageUrl is string && data.imageUrl.size() <= 2000)) &&
-             (data.x == null || data.x is number) &&
-             (data.y == null || data.y is number) &&
-             (data.rotate == null || data.rotate is number) &&
-             (data.color == null || (data.color is string && data.color.size() <= 20)) &&
+             (!('title' in data) || (data.title is string && data.title.size() <= 1000)) &&
+             (!('content' in data) || (data.content is string && data.content.size() <= 5000)) &&
+             (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() <= 1000000)) &&
+             (!('x' in data) || data.x is number) &&
+             (!('y' in data) || data.y is number) &&
+             (!('rotate' in data) || data.rotate is number) &&
+             (!('color' in data) || (data.color is string && data.color.size() <= 50)) &&
              data.createdAt == request.time;
     }
     
@@ -64,36 +64,34 @@ service cloud.firestore {
     }
 
     function isValidSubscription(data) {
-      return data.keys().hasAll(['platform', 'channel', 'order', 'updatedAt']) &&
-             data.keys().size() == 4 &&
-             data.platform is string && data.platform.size() <= 100 &&
-             data.channel is string && data.channel.size() <= 100 &&
-             data.order is number &&
+      return data.keys().hasAny(['platform', 'channel', 'order', 'updatedAt']) &&
+             (!('platform' in data) || (data.platform is string && data.platform.size() <= 100)) &&
+             (!('channel' in data) || (data.channel is string && data.channel.size() <= 100)) &&
+             (!('order' in data) || data.order is number) &&
              data.updatedAt == request.time;
     }
 
     function isValidMembership(data) {
-      return data.keys().hasAll(['channel', 'expired', 'order', 'updatedAt']) &&
-             data.keys().size() == 4 &&
-             data.channel is string && data.channel.size() <= 100 &&
-             data.expired is string && data.expired.size() <= 100 &&
-             data.order is number &&
+      return data.keys().hasAny(['channel', 'expired', 'order', 'updatedAt']) &&
+             (!('channel' in data) || (data.channel is string && data.channel.size() <= 100)) &&
+             (!('expired' in data) || (data.expired is string && data.expired.size() <= 100)) &&
+             (!('order' in data) || data.order is number) &&
              data.updatedAt == request.time;
     }
 
     function isValidKeyDate(data) {
       return data.keys().hasAny(['month', 'line', 'updatedAt']) &&
-             data.month is string && data.line is number &&
-             (data.date == null || (data.date is string && data.date.size() <= 10)) &&
-             (data.event == null || (data.event is string && data.event.size() <= 500)) &&
+             (!('month' in data) || data.month is string) &&
+             (!('line' in data) || data.line is number) &&
+             (!('date' in data) || data.date == null || (data.date is string && data.date.size() <= 10)) &&
+             (!('event' in data) || data.event == null || (data.event is string && data.event.size() <= 600)) &&
              data.updatedAt == request.time;
     }
 
     function isValidDailyNote(data) {
-      return data.keys().hasAll(['dateId', 'content', 'updatedAt']) &&
-             data.keys().size() == 3 &&
-             data.dateId is string && data.dateId.size() <= 20 &&
-             data.content is string && data.content.size() <= 1000 &&
+      return data.keys().hasAny(['dateId', 'content', 'updatedAt']) &&
+             (!('dateId' in data) || (data.dateId is string && data.dateId.size() <= 40)) &&
+             (!('content' in data) || (data.content is string && data.content.size() <= 2000)) &&
              data.updatedAt == request.time;
     }
 
@@ -103,62 +101,71 @@ service cloud.firestore {
       allow create: if isOwner(userId) && isValidUser(incoming());
       allow update: if isOwner(userId) && isValidUserUpdate(incoming()) && incoming().diff(existing()).affectedKeys().hasOnly(['theme']);
       
-      match /habits/{habitId} {
-        allow read, list: if isOwner(userId);
-        allow create: if isOwner(userId) && isValidId(habitId) && isValidHabit(incoming());
-        allow update: if isOwner(userId) && isValidId(habitId) && incoming().updatedAt == request.time && incoming().createdAt == existing().createdAt && incoming().diff(existing()).affectedKeys().hasOnly(['text', 'completed', 'updatedAt']);
-        allow delete: if isOwner(userId) && isValidId(habitId);
-      }
-      
-      match /missions/{missionId} {
-        allow read, list: if isOwner(userId);
-        allow create: if isOwner(userId) && isValidId(missionId) && isValidMission(incoming());
-        allow update: if isOwner(userId) && isValidId(missionId) && incoming().updatedAt == request.time && incoming().diff(existing()).affectedKeys().hasOnly(['missionText', 'updatedAt']);
-        allow delete: if isOwner(userId) && isValidId(missionId);
+      match /years/{year} {
+        allow read, write: if isOwner(userId); // Basic owner check for the year document if it exists
+
+        match /habits/{habitId} {
+          allow read, list: if isOwner(userId);
+          allow create: if isOwner(userId) && isValidId(habitId) && isValidHabit(incoming());
+          allow update: if isOwner(userId) && isValidId(habitId) && incoming().updatedAt == request.time && incoming().createdAt == existing().createdAt && incoming().diff(existing()).affectedKeys().hasOnly(['text', 'completed', 'updatedAt']);
+          allow delete: if isOwner(userId) && isValidId(habitId);
+        }
+        
+        match /missions/{missionId} {
+          allow read, list: if isOwner(userId);
+          allow create: if isOwner(userId) && isValidId(missionId) && isValidMission(incoming());
+          allow update: if isOwner(userId) && isValidId(missionId) && incoming().updatedAt == request.time && incoming().diff(existing()).affectedKeys().hasOnly(['missionText', 'updatedAt']);
+          allow delete: if isOwner(userId) && isValidId(missionId);
+        }
+
+        match /memories/{memoryId} {
+          allow read, list: if isOwner(userId);
+          allow create, update, delete: if isOwner(userId);
+        }
+
+        match /journals/{journalId} {
+          allow read, list: if isOwner(userId);
+          allow create: if isOwner(userId) && isValidId(journalId) && isValidJournal(incoming());
+          allow update: if isOwner(userId) && isValidId(journalId) && incoming().updatedAt == request.time && incoming().diff(existing()).affectedKeys().hasOnly(['content', 'updatedAt']);
+          allow delete: if isOwner(userId) && isValidId(journalId);
+        }
+        
+        match /subscriptions/{subId} {
+          allow read, list: if isOwner(userId);
+          allow create: if isOwner(userId) && isValidId(subId) && isValidSubscription(incoming());
+          allow update: if isOwner(userId) && isValidId(subId) && incoming().updatedAt == request.time && (resource == null || incoming().diff(existing()).affectedKeys().hasOnly(['platform', 'channel', 'order', 'updatedAt']));
+          allow delete: if isOwner(userId) && isValidId(subId);
+        }
+        
+        match /memberships/{memId} {
+          allow read, list: if isOwner(userId);
+          allow create: if isOwner(userId) && isValidId(memId) && isValidMembership(incoming());
+          allow update: if isOwner(userId) && isValidId(memId) && incoming().updatedAt == request.time && (resource == null || incoming().diff(existing()).affectedKeys().hasOnly(['channel', 'expired', 'order', 'updatedAt']));
+          allow delete: if isOwner(userId) && isValidId(memId);
+        }
+
+        match /keydates/{kdId} {
+          allow read, list: if isOwner(userId);
+          allow create, update: if isOwner(userId) && isValidId(kdId) && isValidKeyDate(incoming());
+          allow delete: if isOwner(userId) && isValidId(kdId);
+        }
+
+        match /dailynotes/{noteId} {
+          allow read, list: if isOwner(userId);
+          allow create, update: if isOwner(userId) && isValidId(noteId) && isValidDailyNote(incoming());
+          allow delete: if isOwner(userId) && isValidId(noteId);
+        }
       }
 
-      match /memories/{memoryId} {
-        allow read, list: if isOwner(userId);
-        allow create: if isOwner(userId) && isValidId(memoryId) && isValidMemory(incoming());
-        allow update: if isOwner(userId) && isValidId(memoryId) && (
-            (incoming().diff(existing()).affectedKeys().hasOnly(['x', 'y'])) ||
-            (incoming().diff(existing()).affectedKeys().hasOnly(['title', 'content', 'rotate', 'color']))
-        );
-        allow delete: if isOwner(userId) && isValidId(memoryId);
-      }
-
-      match /journals/{journalId} {
-        allow read, list: if isOwner(userId);
-        allow create: if isOwner(userId) && isValidId(journalId) && isValidJournal(incoming());
-        allow update: if isOwner(userId) && isValidId(journalId) && incoming().updatedAt == request.time && incoming().diff(existing()).affectedKeys().hasOnly(['content', 'updatedAt']);
-        allow delete: if isOwner(userId) && isValidId(journalId);
-      }
-      
-      match /subscriptions/{subId} {
-        allow read, list: if isOwner(userId);
-        allow create: if isOwner(userId) && isValidId(subId) && isValidSubscription(incoming());
-        allow update: if isOwner(userId) && isValidId(subId) && incoming().updatedAt == request.time && incoming().diff(existing()).affectedKeys().hasOnly(['platform', 'channel', 'order', 'updatedAt']);
-        allow delete: if isOwner(userId) && isValidId(subId);
-      }
-      
-      match /memberships/{memId} {
-        allow read, list: if isOwner(userId);
-        allow create: if isOwner(userId) && isValidId(memId) && isValidMembership(incoming());
-        allow update: if isOwner(userId) && isValidId(memId) && incoming().updatedAt == request.time && incoming().diff(existing()).affectedKeys().hasOnly(['channel', 'expired', 'order', 'updatedAt']);
-        allow delete: if isOwner(userId) && isValidId(memId);
-      }
-
-      match /keydates/{kdId} {
-        allow read, list: if isOwner(userId);
-        allow create, update: if isOwner(userId) && isValidId(kdId) && isValidKeyDate(incoming());
-        allow delete: if isOwner(userId) && isValidId(kdId);
-      }
-
-      match /dailynotes/{noteId} {
-        allow read, list: if isOwner(userId);
-        allow create, update: if isOwner(userId) && isValidId(noteId) && isValidDailyNote(incoming());
-        allow delete: if isOwner(userId) && isValidId(noteId);
-      }
+      // Keep old paths for a while or if used for non-year data
+      match /habits/{habitId} { allow read, list: if isOwner(userId); allow write: if isOwner(userId); }
+      match /missions/{missionId} { allow read, list: if isOwner(userId); allow write: if isOwner(userId); }
+      match /memories/{memoryId} { allow read, list: if isOwner(userId); allow write: if isOwner(userId); }
+      match /journals/{journalId} { allow read, list: if isOwner(userId); allow write: if isOwner(userId); }
+      match /subscriptions/{subId} { allow read, list: if isOwner(userId); allow write: if isOwner(userId); }
+      match /memberships/{memId} { allow read, list: if isOwner(userId); allow write: if isOwner(userId); }
+      match /keydates/{kdId} { allow read, list: if isOwner(userId); allow write: if isOwner(userId); }
+      match /dailynotes/{noteId} { allow read, list: if isOwner(userId); allow write: if isOwner(userId); }
     }
   }
 }

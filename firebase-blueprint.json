@@ -115,33 +115,37 @@
       "schema": { "$ref": "#/entities/User" },
       "description": "User profile with theme"
     },
-    "/users/{userId}/habits/{habitId}": {
+    "/users/{userId}/years/{year}/habits/{habitId}": {
       "schema": { "$ref": "#/entities/Habit" },
-      "description": "User habits"
+      "description": "User habits per year"
     },
-    "/users/{userId}/missions/{docId}": {
+    "/users/{userId}/years/{year}/missions/{docId}": {
       "schema": { "$ref": "#/entities/Mission" },
-      "description": "User monthly missions"
+      "description": "User monthly missions per year"
     },
-    "/users/{userId}/memories/{memoryId}": {
+    "/users/{userId}/years/{year}/memories/{memoryId}": {
       "schema": { "$ref": "#/entities/Memory" },
-      "description": "User memories"
+      "description": "User memories per year"
     },
-    "/users/{userId}/journals/{journalId}": {
+    "/users/{userId}/years/{year}/journals/{journalId}": {
       "schema": { "$ref": "#/entities/Journal" },
-      "description": "User journals"
+      "description": "User journals per year"
     },
-    "/users/{userId}/subscriptions/{subId}": {
+    "/users/{userId}/years/{year}/subscriptions/{subId}": {
       "schema": { "$ref": "#/entities/Subscription" },
-      "description": "User subscriptions"
+      "description": "User subscriptions per year"
     },
-    "/users/{userId}/memberships/{memId}": {
+    "/users/{userId}/years/{year}/memberships/{memId}": {
       "schema": { "$ref": "#/entities/Membership" },
-      "description": "User memberships"
+      "description": "User memberships per year"
     },
-    "/users/{userId}/dailynotes/{noteId}": {
+    "/users/{userId}/years/{year}/keydates/{kdId}": {
+      "schema": { "$ref": "#/entities/KeyDate" },
+      "description": "User key dates per year"
+    },
+    "/users/{userId}/years/{year}/dailynotes/{noteId}": {
       "schema": { "$ref": "#/entities/DailyNote" },
-      "description": "Daily calendar notes"
+      "description": "Daily calendar notes per year"
     }
   }
 }
