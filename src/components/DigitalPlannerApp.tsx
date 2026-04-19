@@ -6,7 +6,7 @@ import {
   Type, Move, Palette, ChevronDown
 } from 'lucide-react';
 import { db, auth, loginWithGoogle, logout } from '../firebase';
-import { onAuthStateChanged, User, getRedirectResult } from 'firebase/auth';
+import { onAuthStateChanged, User } from 'firebase/auth';
 import { collection, doc, onSnapshot, query, setDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, addDoc } from 'firebase/firestore';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isToday, addMonths, subMonths } from 'date-fns';
 import { motion } from 'motion/react';
@@ -17,19 +17,6 @@ export default function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Handle redirect result
-    getRedirectResult(auth).catch((error) => {
-      console.error("Redirect sign-in error", error);
-      if (error.code === 'auth/unauthorized-domain') {
-        Swal.fire({
-          title: 'Unauthorized Domain',
-          text: 'This domain is not authorized for Firebase Authentication. Please add this domain to your Firebase Console under Authentication > Settings > Authorized domains.',
-          icon: 'error',
-          confirmButtonColor: '#f43f5e'
-        });
-      }
-    });
-
     const unsub = onAuthStateChanged(auth, (u) => {
       setUser(u);
       setLoading(false);
