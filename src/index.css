@@ -5,3 +5,11 @@
   --font-sans: "Itim", "Outfit", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Fredoka", sans-serif;
 }
+
+@utility hide-scrollbar {
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

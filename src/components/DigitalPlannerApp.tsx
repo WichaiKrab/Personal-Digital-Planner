@@ -82,17 +82,17 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
       { id: 'subscription', icon: BookOpen, label: 'Subscription' },
     ];
     return (
-      <div className={`flex flex-wrap items-center gap-1 p-1.5 md:p-2 ${theme.surface} rounded-3xl shadow-xl border-4 border-white/80 ring-1 ring-black/5 w-full md:w-auto`}>
-        <div className="flex flex-1 md:flex-none gap-1">
+      <div className={`flex items-center gap-1 p-1.5 md:p-2 ${theme.surface} rounded-3xl shadow-xl border-4 border-white/80 ring-1 ring-black/5 w-full md:w-auto`}>
+        <div className="flex flex-1 md:flex-none gap-1 overflow-x-auto hide-scrollbar scroll-smooth">
           {tabs.map((tab) => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center justify-center p-2 md:p-3 rounded-xl transition-all duration-200 flex-1 min-w-[45px] ${activeTab === tab.id ? theme.primary + ' shadow-inner scale-95' : 'hover:bg-gray-50'}`} title={tab.label}>
+              className={`flex items-center justify-center p-2 md:p-3 rounded-xl transition-all duration-200 shrink-0 min-w-[40px] md:min-w-[45px] ${activeTab === tab.id ? theme.primary + ' shadow-inner scale-95' : 'hover:bg-gray-50'}`} title={tab.label}>
               <tab.icon className={`w-5 h-5 md:w-6 md:h-6 ${activeTab === tab.id ? theme.text : 'text-gray-400'}`} />
             </button>
           ))}
         </div>
-        <div className="w-px h-8 bg-gray-100 mx-1 hidden md:block" />
-        <div className="flex items-center gap-1 relative">
+        <div className="w-px h-8 bg-gray-100 mx-1 shrink-0" />
+        <div className="flex items-center gap-1 shrink-0">
            <div className="relative">
               <button 
                 onClick={() => setIsThemeOpen(!isThemeOpen)}
@@ -251,6 +251,36 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
             text: newText.trim(), updatedAt: serverTimestamp()
         });
     };
+    const openNoteEditor = async (day: Date, currentContent: string) => {
+        const dateId = format(day, 'yyyy-MM-dd');
+        const formattedDate = format(day, 'EEEE, d MMMM yyyy');
+        
+        const { value: text } = await Swal.fire({
+            title: formattedDate,
+            input: 'textarea',
+            inputLabel: 'What\'s happening today?',
+            inputValue: currentContent,
+            inputPlaceholder: 'Type your note here...',
+            inputAttributes: {
+                'aria-label': 'Type your note here'
+            },
+            showCancelButton: true,
+            confirmButtonColor: '#f43f5e',
+            cancelButtonColor: '#94a3b8',
+            confirmButtonText: 'Save Note',
+            cancelButtonText: 'Cancel',
+            customClass: {
+                popup: 'rounded-3xl',
+                title: 'font-display text-lg font-bold',
+                input: 'rounded-xl text-sm'
+            }
+        });
+
+        if (text !== undefined) {
+            await saveDailyNote(dateId, text);
+        }
+    };
+
     const start = startOfMonth(currentDate);
     const end = endOfMonth(currentDate);
     const days = eachDayOfInterval({ start, end });
@@ -307,10 +337,19 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
             </div>
             <div className="flex gap-2">
               <button onClick={() => setCurrentDate(subMonths(currentDate, 1))} className="p-2 rounded-full hover:bg-gray-100 text-gray-600 transition-colors"><ChevronLeft size={24} /></button>
+              <button 
+                onClick={() => {
+                  const today = new Date();
+                  setCurrentDate(new Date(selectedYear, today.getMonth(), today.getDate()));
+                }} 
+                className={`hidden md:block px-4 py-1 rounded-full border ${theme.border} text-xs font-bold ${theme.textMuted} hover:${theme.primary} hover:text-gray-800 transition-all`}
+              >
+                Today
+              </button>
               <button onClick={() => setCurrentDate(addMonths(currentDate, 1))} className="p-2 rounded-full hover:bg-gray-100 text-gray-600 transition-colors"><ChevronRight size={24} /></button>
             </div>
           </div>
-          <div className="flex-grow p-4 bg-gray-50/50 flex flex-col overflow-y-auto">
+          <div className="flex-grow p-2 md:p-4 bg-gray-50/50 flex flex-col overflow-y-auto">
             <div className="grid grid-cols-7 gap-1 md:gap-2 mb-2">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
                 <div key={day} className={`text-center text-[10px] md:text-xs font-bold uppercase tracking-wider ${day === 'Sun' || day === 'Sat' ? theme.textMuted : 'text-gray-500'}`}>{day}</div>
@@ -321,16 +360,19 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
               {days.map(day => {
                   const dateId = format(day, 'yyyy-MM-dd');
                   const note = dailyNotes.find(n => n.dateId === dateId);
+                  const isSunSat = getDay(day) === 0 || getDay(day) === 6;
                   return (
-                    <div key={dateId} className={`relative flex flex-col p-1.5 md:p-2 rounded-xl border transition-all min-h-[70px] md:min-h-[100px] ${isToday(day) ? `bg-white border-2 ${theme.border} ring-2 ring-white shadow-md z-10 scale-105` : 'border-gray-100 bg-white/60 hover:bg-white hover:border-gray-200 shadow-sm'}`}>
-                      <span className={`text-[10px] md:text-xs font-bold mb-1 ${getDay(day) === 0 || getDay(day) === 6 ? theme.textMuted : 'text-gray-500'}`}>{format(day, 'd')}</span>
-                      <textarea 
-                        key={`${dateId}-${note?.content}`}
-                        defaultValue={note?.content || ''}
-                        onBlur={(e) => saveDailyNote(dateId, e.target.value)}
-                        placeholder="..."
-                        className="flex-grow bg-transparent text-[10px] md:text-xs outline-none resize-none leading-tight py-1 hide-scrollbar"
-                      />
+                    <div 
+                      key={dateId} 
+                      onClick={() => openNoteEditor(day, note?.content || '')}
+                      className={`relative flex flex-col p-1 md:p-2 rounded-lg md:rounded-xl border transition-all min-h-[75px] md:min-h-[100px] cursor-pointer group active:scale-95
+                        ${isToday(day) ? `bg-white border-2 ${theme.border} ring-2 ring-white shadow-md z-10 scale-105` : 'border-gray-100 bg-white/60 hover:bg-white hover:border-gray-200 shadow-sm'}`}
+                    >
+                      <span className={`text-[10px] md:text-xs font-bold mb-1 ${isSunSat ? theme.textMuted : 'text-gray-500'}`}>{format(day, 'd')}</span>
+                      <div className="flex-grow text-[9px] md:text-xs text-gray-600 overflow-hidden leading-tight line-clamp-3 md:line-clamp-none break-words whitespace-pre-wrap">
+                        {note?.content || ''}
+                      </div>
+                      {!note?.content && <div className="hidden group-hover:block absolute bottom-1 right-1 opacity-25"><Plus size={10}/></div>}
                     </div>
                   );
               })}
@@ -345,27 +387,50 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
     const handleMissionChange = async (month: string, text: string) => {
         await setDoc(doc(db, `users/${userId}/years/${selectedYear}/missions/${month}`), { month, missionText: text, updatedAt: serverTimestamp() }, { merge: true });
     };
+
+    const openMissionEditor = async (month: string, currentText: string) => {
+        const { value: text } = await Swal.fire({
+            title: `${month} Mission`,
+            input: 'textarea',
+            inputValue: currentText,
+            inputPlaceholder: 'What is your mission for this month?',
+            showCancelButton: true,
+            confirmButtonColor: '#f43f5e',
+            cancelButtonColor: '#94a3b8',
+            confirmButtonText: 'Save Mission',
+            customClass: {
+                popup: 'rounded-3xl',
+                title: 'font-display font-bold',
+                input: 'rounded-xl text-sm'
+            }
+        });
+
+        if (text !== undefined) {
+            await handleMissionChange(month, text);
+        }
+    };
+
     return (
       <div className={`h-full p-4 md:p-8 rounded-3xl ${theme.surface} border ${theme.border} shadow-sm animate-in fade-in duration-300 flex flex-col`}>
-        <div className="flex justify-between items-center mb-6">
-          <h2 className={`text-2xl md:text-3xl font-display font-bold ${theme.text} uppercase tracking-widest`}>Mission of the Year {selectedYear}</h2>
-          <span className="text-gray-400 font-medium tracking-widest">{selectedYear}</span>
+        <div className="flex justify-between items-center mb-6 px-2">
+          <h2 className={`text-xl md:text-3xl font-display font-bold ${theme.text} uppercase tracking-widest`}>Mission {selectedYear}</h2>
+          <span className="text-gray-400 font-medium tracking-widest text-sm md:text-base">{selectedYear}</span>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 flex-grow overflow-y-auto">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 flex-grow overflow-y-auto pr-1">
           {fullMonths.map((m) => {
             const missionDoc = missions.find(x => x.month === m);
             return (
-              <div key={m} className={`flex flex-col border border-gray-200 rounded-2xl overflow-hidden bg-gray-50/50 min-h-[150px]`}>
-                <div className={`h-2 shrink-0 ${theme.primary}`}></div>
-                <div className="p-3 flex-grow flex flex-col">
-                  <h3 className="text-center font-bold text-gray-500 text-xs uppercase tracking-wider mb-2">{m}</h3>
-                  <textarea 
-                    key={`${m}-${missionDoc?.missionText}`}
-                    defaultValue={missionDoc?.missionText || ''}
-                    onBlur={(e) => handleMissionChange(m, e.target.value)}
-                    className="w-full flex-grow bg-transparent resize-none outline-none text-sm text-gray-700 placeholder-gray-300"
-                    placeholder="Write mission..."
-                  />
+              <div 
+                key={m} 
+                onClick={() => openMissionEditor(m, missionDoc?.missionText || '')}
+                className={`group flex flex-col border border-gray-200 rounded-2xl overflow-hidden bg-gray-50/50 min-h-[140px] md:min-h-[160px] cursor-pointer transition-all hover:border-rose-200 hover:shadow-md active:scale-95`}
+              >
+                <div className={`h-1.5 md:h-2 shrink-0 ${theme.primary} transition-colors group-hover:bg-rose-300`}></div>
+                <div className="p-2 md:p-3 flex-grow flex flex-col">
+                  <h3 className="text-center font-bold text-gray-500 text-[10px] md:text-xs uppercase tracking-wider mb-2">{m}</h3>
+                  <div className="flex-grow text-[11px] md:text-sm text-gray-700 leading-tight line-clamp-4 overflow-hidden italic whitespace-pre-wrap">
+                    {missionDoc?.missionText ? `${missionDoc.missionText}` : <span className="text-gray-300 font-normal">Tap to add mission...</span>}
+                  </div>
                 </div>
               </div>
             )
@@ -573,11 +638,11 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
     return (
       <div className={`min-h-[500px] h-[calc(100vh-200px)] md:h-[600px] p-6 rounded-3xl ${theme.surface} border ${theme.border} flex flex-col relative overflow-hidden`}
            style={{ backgroundImage: 'radial-gradient(#cbd5e1 1.5px, transparent 1.5px)', backgroundSize: '32px 32px' }}>
-        <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-6 py-3 rounded-full shadow-md z-30 flex items-center gap-4">
-          <h2 className={`text-lg font-display font-bold ${theme.text} uppercase tracking-widest`}>Room of Memories {selectedYear}</h2>
-          <div className="flex gap-2">
-             <button onClick={() => addMemory('photo')} className={`p-2 rounded-full ${theme.primary} hover:scale-110 active:scale-95 transition-all text-gray-800 shadow-sm`} title="Add Photo"><ImageIcon size={18}/></button>
-             <button onClick={() => addMemory('note')} className={`p-2 rounded-full ${theme.primary} hover:scale-110 active:scale-95 transition-all text-gray-800 shadow-sm`} title="Add Note"><Type size={18}/></button>
+        <div className="absolute top-2 right-2 md:top-4 md:right-4 bg-white/90 backdrop-blur-sm px-3 py-2 md:px-6 md:py-3 rounded-2xl md:rounded-full shadow-md z-30 flex items-center gap-2 md:gap-4 max-w-[calc(100%-1rem)]">
+          <h2 className={`text-xs md:text-lg font-display font-bold ${theme.text} uppercase tracking-widest truncate`}>Room of Memories {selectedYear}</h2>
+          <div className="flex gap-1 md:gap-2 shrink-0">
+             <button onClick={() => addMemory('photo')} className={`p-1.5 md:p-2 rounded-full ${theme.primary} hover:scale-110 active:scale-95 transition-all text-gray-800 shadow-sm`} title="Add Photo"><ImageIcon size={14}/><span className="hidden md:inline md:ml-1 md:hidden">Photo</span></button>
+             <button onClick={() => addMemory('note')} className={`p-1.5 md:p-2 rounded-full ${theme.primary} hover:scale-110 active:scale-95 transition-all text-gray-800 shadow-sm`} title="Add Note"><Type size={14}/><span className="hidden md:inline md:ml-1 md:hidden">Note</span></button>
           </div>
         </div>
         <div ref={containerRef} className="relative w-full h-full pt-16 p-8 overflow-hidden z-20">
@@ -650,37 +715,68 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
         return unsub;
     }, [userId, selectedYear]);
 
+    const openKeyDateEditor = async (month: string, line: number, data: any) => {
+        const { value: formValues } = await Swal.fire({
+            title: `${month} - Entry ${line}`,
+            html: `
+                <div class="space-y-4">
+                    <div class="text-left">
+                        <label class="text-xs font-bold text-gray-400 uppercase mb-1 block">Date</label>
+                        <input id="swal-date" class="swal2-input !m-0 !w-full" placeholder="e.g. 15 or 15-18" value="${data?.date || ''}">
+                    </div>
+                    <div class="text-left">
+                        <label class="text-xs font-bold text-gray-400 uppercase mb-1 block">Event Description</label>
+                        <textarea id="swal-event" class="swal2-textarea !m-0 !w-full" placeholder="What is happening?">${data?.event || ''}</textarea>
+                    </div>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonColor: '#f43f5e',
+            cancelButtonColor: '#94a3b8',
+            confirmButtonText: 'Save Update',
+            customClass: {
+                popup: 'rounded-3xl',
+                title: 'font-display font-bold',
+            },
+            preConfirm: () => {
+                return {
+                    date: (document.getElementById('swal-date') as HTMLInputElement).value,
+                    event: (document.getElementById('swal-event') as HTMLTextAreaElement).value
+                }
+            }
+        });
+
+        if (formValues) {
+            await handleSave(month, line, 'date', formValues.date);
+            await handleSave(month, line, 'event', formValues.event);
+        }
+    };
+
     return (
       <div className={`h-full p-6 md:p-8 rounded-3xl ${theme.surface} border ${theme.border} shadow-sm animate-in fade-in flex flex-col`}>
-        <h2 className={`text-2xl font-display font-bold mb-6 ${theme.text} uppercase tracking-widest text-center`}>Key Date {selectedYear}</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 flex-grow overflow-auto pb-4 pr-2">
+        <h2 className={`text-xl md:text-2xl font-display font-bold mb-6 ${theme.text} uppercase tracking-widest text-center`}>Key Date {selectedYear}</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 flex-grow overflow-auto pb-4 pr-1">
           {fullMonths.map((month) => (
-            <div key={month} className="flex flex-col border border-gray-200 rounded-2xl overflow-hidden bg-white shadow-lg hover:shadow-xl hover:border-gray-300 transition-all">
-              <div className={`py-3 text-center font-bold text-sm uppercase tracking-widest bg-gray-50 border-b border-gray-200 text-gray-800`}>{month}</div>
-              <div className="flex bg-gray-50 border-b border-gray-100 p-2 font-black text-[10px] text-gray-400 tracking-[0.2em]">
-                <div className="w-1/4 text-center border-r border-gray-200">DATE</div><div className="flex-1 text-center">EVENT</div>
+            <div key={month} className="flex flex-col border border-gray-200 rounded-2xl overflow-hidden bg-white shadow-md hover:shadow-lg transition-all">
+              <div className={`py-2 md:py-3 text-center font-bold text-xs md:text-sm uppercase tracking-widest bg-gray-50 border-b border-gray-200 text-gray-800`}>{month}</div>
+              <div className="flex bg-gray-50 border-b border-gray-100 p-2 font-black text-[9px] md:text-[10px] text-gray-400 tracking-[0.2em] uppercase">
+                <div className="w-10 md:w-12 text-center border-r border-gray-200">Date</div><div className="flex-1 text-center">Event</div>
               </div>
-              <div className="flex-grow p-1 bg-white">
+              <div className="flex-grow p-0 bg-white">
                 {[1,2,3,4,5,6].map(line => {
                   const data = kDates.find(kd => kd.month === month && kd.line === line);
                   return (
-                    <div key={line} className="flex h-10 border-b border-gray-100 last:border-0" >
-                      <input 
-                        type="text" 
-                        key={`${month}-${line}-date-${data?.date}`}
-                        defaultValue={data?.date || ''}
-                        onBlur={(e) => handleSave(month, line, 'date', e.target.value)}
-                        className="w-1/4 border-r border-gray-100 bg-transparent text-xs text-center outline-none font-bold text-gray-800" 
-                        placeholder="DD" 
-                      />
-                      <input 
-                        type="text" 
-                        key={`${month}-${line}-event-${data?.event}`}
-                        defaultValue={data?.event || ''}
-                        onBlur={(e) => handleSave(month, line, 'event', e.target.value)}
-                        className="flex-1 bg-transparent text-sm outline-none px-3 text-gray-700" 
-                        placeholder="..." 
-                      />
+                    <div 
+                        key={line} 
+                        onClick={() => openKeyDateEditor(month, line, data)}
+                        className="flex min-h-[36px] md:h-10 border-b border-gray-100 last:border-0 hover:bg-rose-50/30 cursor-pointer transition-colors items-center" 
+                    >
+                      <div className="w-10 md:w-12 border-r border-gray-100 h-full flex items-center justify-center text-[10px] md:text-xs font-bold text-gray-800 shrink-0">
+                         {data?.date || <span className="text-gray-200">-</span>}
+                      </div>
+                      <div className="flex-1 px-2 md:px-3 text-[11px] md:text-sm text-gray-700 truncate">
+                         {data?.event || <span className="text-gray-200">...</span>}
+                      </div>
                     </div>
                   )
                 })}
@@ -749,34 +845,98 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
         }, { merge: true });
     };
 
+    const openSubEditor = async (item: any) => {
+        const { value: formValues } = await Swal.fire({
+            title: `Subscription #${item.order + 1}`,
+            html: `
+                <div class="space-y-4">
+                    <div class="text-left">
+                        <label class="text-xs font-bold text-gray-400 uppercase mb-1 block">Platform</label>
+                        <input id="swal-platform" class="swal2-input !m-0 !w-full" placeholder="e.g. Netflix" value="${item.platform || ''}">
+                    </div>
+                    <div class="text-left">
+                        <label class="text-xs font-bold text-gray-400 uppercase mb-1 block">Channel/Details</label>
+                        <textarea id="swal-channel" class="swal2-textarea !m-0 !w-full" placeholder="Account name or plan details...">${item.channel || ''}</textarea>
+                    </div>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonColor: '#2563eb', // Blue
+            confirmButtonText: 'Save Update',
+            customClass: { popup: 'rounded-3xl', title: 'font-display font-bold' },
+            preConfirm: () => {
+                return {
+                    platform: (document.getElementById('swal-platform') as HTMLInputElement).value,
+                    channel: (document.getElementById('swal-channel') as HTMLTextAreaElement).value
+                }
+            }
+        });
+
+        if (formValues) {
+            await saveSub(item.order, 'platform', formValues.platform);
+            await saveSub(item.order, 'channel', formValues.channel);
+        }
+    };
+
+    const openMemEditor = async (item: any) => {
+        const { value: formValues } = await Swal.fire({
+            title: `Membership #${item.order + 1}`,
+            html: `
+                <div class="space-y-4">
+                    <div class="text-left">
+                        <label class="text-xs font-bold text-gray-400 uppercase mb-1 block">Club / Channel</label>
+                        <input id="swal-channel" class="swal2-input !m-0 !w-full" placeholder="e.g. Fitness Club" value="${item.channel || ''}">
+                    </div>
+                    <div class="text-left">
+                        <label class="text-xs font-bold text-gray-400 uppercase mb-1 block">Expired Date</label>
+                        <input id="swal-expired" class="swal2-input !m-0 !w-full" placeholder="MM/YY" value="${item.expired || ''}">
+                    </div>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonColor: '#0d9488', // Teal
+            confirmButtonText: 'Save Update',
+            customClass: { popup: 'rounded-3xl', title: 'font-display font-bold' },
+            preConfirm: () => {
+                return {
+                    channel: (document.getElementById('swal-channel') as HTMLInputElement).value,
+                    expired: (document.getElementById('swal-expired') as HTMLInputElement).value
+                }
+            }
+        });
+
+        if (formValues) {
+            await saveMem(item.order, 'channel', formValues.channel);
+            await saveMem(item.order, 'expired', formValues.expired);
+        }
+    };
+
     return (
       <div className={`h-full p-4 md:p-8 rounded-3xl ${theme.surface} border ${theme.border} animate-in fade-in flex flex-col`}>
-        <h2 className={`text-2xl font-display font-bold mb-6 ${theme.text} text-center uppercase tracking-widest`}>Subscription & Membership {selectedYear}</h2>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 flex-grow overflow-auto pr-2 pb-8">
+        <h2 className={`text-xl md:text-2xl font-display font-bold mb-6 ${theme.text} text-center uppercase tracking-widest`}>Subscription & Membership {selectedYear}</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 flex-grow overflow-auto pr-1 pb-8">
           
           <div className="border border-gray-200 rounded-2xl overflow-hidden flex flex-col bg-white h-fit shadow-lg">
             <div className={`py-3 text-center font-bold text-xs tracking-widest text-white bg-blue-700`}>SUBSCRIPTION</div>
-            <div className="flex bg-gray-50 border-b border-gray-200 text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em] p-3 text-center">
-              <div className="w-12">No.</div><div className="w-1/3 border-l border-gray-100">Platform</div><div className="flex-1 border-l border-gray-100">Channel</div>
+            <div className="flex bg-gray-50 border-b border-gray-200 text-[9px] md:text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em] text-center h-10 items-center">
+              <div className="w-10 shrink-0">No.</div>
+              <div className="w-1/3 border-l border-gray-100 h-full flex items-center justify-center">Platform</div>
+              <div className="flex-1 border-l border-gray-100 h-full flex items-center justify-center">Channel</div>
             </div>
             <div>
                {subSlots.map((item, i) => (
-                  <div key={item.id} className="flex border-b border-gray-100 h-10 hover:bg-blue-50/20 focus-within:bg-blue-50/50 transition-colors">
-                    <div className="w-12 flex items-center justify-center text-xs font-bold text-gray-300">{i + 1}</div>
-                    <input 
-                        type="text" 
-                        key={`${item.id}-plat-${item.platform}`}
-                        defaultValue={item.platform} 
-                        onBlur={(e) => saveSub(i, 'platform', e.target.value)} 
-                        className="w-1/3 border-r border-l border-gray-100 bg-transparent px-3 text-sm outline-none font-medium text-gray-700" 
-                    />
-                    <input 
-                        type="text" 
-                        key={`${item.id}-chan-${item.channel}`}
-                        defaultValue={item.channel} 
-                        onBlur={(e) => saveSub(i, 'channel', e.target.value)} 
-                        className="flex-1 bg-transparent px-3 text-sm outline-none text-gray-600" 
-                    />
+                  <div 
+                    key={item.id} 
+                    onClick={() => openSubEditor(item)}
+                    className="flex border-b border-gray-100 h-10 hover:bg-blue-50 transition-colors cursor-pointer group"
+                  >
+                    <div className="w-10 shrink-0 flex items-center justify-center text-[10px] md:text-xs font-bold text-gray-300 bg-gray-50/30 group-hover:text-blue-500">{i + 1}</div>
+                    <div className="w-1/3 border-r border-l border-gray-100 flex items-center px-2 md:px-3 text-[11px] md:text-sm font-medium text-gray-700 truncate">
+                      {item.platform || <span className="text-gray-200">-</span>}
+                    </div>
+                    <div className="flex-1 flex items-center px-2 md:px-3 text-[11px] md:text-sm text-gray-600 truncate">
+                      {item.channel || <span className="text-gray-200 italic font-normal">...</span>}
+                    </div>
                   </div>
                ))}
             </div>
@@ -784,28 +944,25 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
 
           <div className="border border-gray-200 rounded-2xl overflow-hidden flex flex-col bg-white h-fit shadow-lg">
             <div className={`py-3 text-center font-bold text-xs tracking-widest text-white bg-teal-600`}>MEMBERSHIP</div>
-            <div className="flex bg-gray-50 border-b border-gray-200 text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em] p-3 text-center">
-              <div className="w-12">No.</div><div className="flex-1 border-l border-gray-100">Channel</div><div className="w-24 border-l border-gray-100">Expired</div>
+            <div className="flex bg-gray-50 border-b border-gray-200 text-[9px] md:text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em] text-center h-10 items-center">
+              <div className="w-10 shrink-0">No.</div>
+              <div className="flex-1 border-l border-gray-100 h-full flex items-center justify-center">Channel</div>
+              <div className="w-20 md:w-24 border-l border-gray-100 h-full flex items-center justify-center px-1">Expired</div>
             </div>
             <div>
                {memSlots.map((item, i) => (
-                  <div key={item.id} className="flex border-b border-gray-100 h-10 hover:bg-teal-50/20 focus-within:bg-teal-50/50 transition-colors">
-                    <div className="w-12 flex items-center justify-center text-xs font-bold text-gray-300">{i + 1}</div>
-                    <input 
-                        type="text" 
-                        key={`${item.id}-chan-${item.channel}`}
-                        defaultValue={item.channel} 
-                        onBlur={(e) => saveMem(i, 'channel', e.target.value)} 
-                        className="flex-1 border-r border-l border-gray-100 bg-transparent px-3 text-sm outline-none font-medium text-gray-700" 
-                    />
-                    <input 
-                        type="text" 
-                        key={`${item.id}-exp-${item.expired}`}
-                        defaultValue={item.expired} 
-                        onBlur={(e) => saveMem(i, 'expired', e.target.value)} 
-                        className="w-24 bg-transparent px-2 text-xs outline-none text-center font-bold text-teal-600" 
-                        placeholder="MM/YY" 
-                    />
+                  <div 
+                    key={item.id} 
+                    onClick={() => openMemEditor(item)}
+                    className="flex border-b border-gray-100 h-10 hover:bg-teal-50 transition-colors cursor-pointer group"
+                  >
+                    <div className="w-10 shrink-0 flex items-center justify-center text-[10px] md:text-xs font-bold text-gray-300 bg-gray-50/30 group-hover:text-teal-600">{i + 1}</div>
+                    <div className="flex-1 border-r border-l border-gray-100 flex items-center px-2 md:px-3 text-[11px] md:text-sm font-medium text-gray-700 truncate">
+                      {item.channel || <span className="text-gray-200">-</span>}
+                    </div>
+                    <div className="w-20 md:w-24 flex items-center justify-center text-[10px] md:text-xs font-bold text-teal-600 uppercase">
+                      {item.expired || <span className="text-gray-200 italic font-normal text-[10px]">...</span>}
+                    </div>
                   </div>
                ))}
             </div>
@@ -819,10 +976,12 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
     <div className={`min-h-screen ${theme.bg} font-sans p-2 sm:p-4 md:p-6 lg:p-10 flex justify-center items-center transition-colors duration-500`}>
       <div className="w-full max-w-[1700px] flex gap-4 md:gap-8 flex-col relative px-2 sm:px-4 md:px-0">
         <div className="flex-1 bg-white/70 backdrop-blur-2xl md:rounded-[3rem] rounded-3xl p-4 md:p-8 shadow-2xl border-4 border-white/80 relative overflow-hidden min-h-[90vh] flex flex-col ring-1 ring-black/5">
-          <div className="flex flex-col xl:flex-row justify-between items-center mb-8 gap-6">
-            <div className="text-center xl:text-left">
-              <h1 className="text-3xl md:text-5xl font-display font-bold text-gray-800 tracking-tight">Personal Digital <span className={theme.textMuted}>Planner</span></h1>
-              <p className="text-sm font-medium text-gray-500 tracking-[0.2em] mt-1 italic">Organize your journey every day</p>
+          <div className="flex flex-col lg:flex-row justify-between items-center mb-8 gap-6">
+            <div className="text-center lg:text-left px-2">
+              <h1 className="text-2xl sm:text-3xl md:text-5xl font-display font-bold text-gray-800 tracking-tight leading-tight">
+                Personal Digital <span className={theme.textMuted}>Planner</span>
+              </h1>
+              <p className="text-[10px] sm:text-xs md:text-sm font-medium text-gray-500 tracking-[0.2em] mt-1 italic uppercase">Organize your journey every day</p>
             </div>
             <NavigationTabs />
           </div>
