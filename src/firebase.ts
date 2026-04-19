@@ -1,7 +1,8 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithRedirect, signOut } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
+import Swal from 'sweetalert2';
 
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
@@ -10,9 +11,24 @@ export const googleProvider = new GoogleAuthProvider();
 
 export const loginWithGoogle = async () => {
   try {
-    await signInWithPopup(auth, googleProvider);
-  } catch (error) {
+    await signInWithRedirect(auth, googleProvider);
+  } catch (error: any) {
     console.error("Error logging in with Google", error);
+    if (error.code === 'auth/unauthorized-domain') {
+      Swal.fire({
+        title: 'Unauthorized Domain',
+        text: 'This domain is not authorized for Firebase Authentication. Please add this domain to your Firebase Console under Authentication > Settings > Authorized domains.',
+        icon: 'error',
+        confirmButtonColor: '#f43f5e'
+      });
+    } else {
+      Swal.fire({
+        title: 'Login Error',
+        text: error.message || 'An unexpected error occurred during login.',
+        icon: 'error',
+        confirmButtonColor: '#f43f5e'
+      });
+    }
   }
 };
 
