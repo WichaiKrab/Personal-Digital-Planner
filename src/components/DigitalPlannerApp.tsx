@@ -5,17 +5,64 @@ import {
   Plus, Image as ImageIcon, Loader2, Trash2,
   Type, Move, Palette, ChevronDown
 } from 'lucide-react';
-import { db } from '../firebase';
+import { db, auth, loginWithGoogle, logout } from '../firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
 import { collection, doc, onSnapshot, query, setDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, addDoc } from 'firebase/firestore';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isToday, addMonths, subMonths } from 'date-fns';
 import { motion } from 'motion/react';
 import Swal from 'sweetalert2';
 
 export default function App() {
-  return <DigitalPlannerApp userId="default-user" />;
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      setLoading(false);
+    });
+    return unsub;
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-rose-50 flex flex-col items-center justify-center p-4">
+        <Loader2 className="w-12 h-12 text-rose-400 animate-spin mb-4" />
+        <p className="text-rose-900 font-display font-medium animate-pulse uppercase tracking-widest text-sm">Initializing Planner...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-rose-50 flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-full max-w-md bg-white rounded-[3rem] p-10 shadow-2xl border-4 border-white ring-1 ring-black/5 animate-in zoom-in duration-500">
+          <div className="w-24 h-24 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner">
+            <Heart className="w-12 h-12 text-rose-500 fill-rose-200" />
+          </div>
+          <h1 className="text-4xl font-display font-bold text-gray-800 mb-2 leading-tight uppercase">Digital <span className="text-rose-400">Planner</span></h1>
+          <p className="text-xs font-medium text-gray-400 tracking-[0.2em] mb-10 italic uppercase">Your private journey starts here</p>
+          
+          <button 
+            onClick={loginWithGoogle}
+            className="w-full py-5 px-6 rounded-2xl bg-white border-2 border-gray-100 hover:border-rose-200 hover:bg-rose-50 text-gray-700 font-bold transition-all flex items-center justify-center gap-4 shadow-sm active:scale-95 group"
+          >
+            <img src="https://www.google.com/favicon.ico" alt="Google" className="w-6 h-6 grayscale group-hover:grayscale-0 transition-all" referrerPolicy="no-referrer" />
+            Sign in with Google
+          </button>
+          
+          <p className="mt-8 text-[10px] text-gray-300 font-medium uppercase tracking-widest leading-relaxed">
+            By signing in, your data will be saved securely and privately to your account.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return <DigitalPlannerApp userId={user.uid} userEmail={user.email || ''} />;
 }
 
-function DigitalPlannerApp({ userId }: { userId: string }) {
+function DigitalPlannerApp({ userId, userEmail }: { userId: string, userEmail: string }) {
   const [activeTab, setActiveTab] = useState('index');
   const [currentTheme, setCurrentTheme] = useState('pink');
   const [isThemeOpen, setIsThemeOpen] = useState(false);
@@ -125,6 +172,27 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
                          `} 
                        />
                     ))}
+                    <div className="col-span-5 border-t border-gray-50 pt-2 mt-1">
+                      <button 
+                        onClick={() => {
+                          Swal.fire({
+                            title: 'Sign out?',
+                            text: `Logged in as: ${userEmail}`,
+                            icon: 'question',
+                            showCancelButton: true,
+                            confirmButtonColor: '#f43f5e',
+                            confirmButtonText: 'Log Out'
+                          }).then((result) => {
+                            if (result.isConfirmed) {
+                              logout();
+                            }
+                          });
+                        }}
+                        className="w-full text-center text-[10px] font-bold text-gray-400 hover:text-rose-500 transition-colors uppercase tracking-[0.2em] py-1"
+                      >
+                        Sign Out
+                      </button>
+                    </div>
                   </motion.div>
                 </>
               )}
@@ -359,13 +427,29 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
               {days.map(day => {
                   const dateId = format(day, 'yyyy-MM-dd');
                   const note = dailyNotes.find(n => n.dateId === dateId);
-                  const isSunSat = getDay(day) === 0 || getDay(day) === 6;
+                  const dayOfWeek = getDay(day);
+                  const isSunSat = dayOfWeek === 0 || dayOfWeek === 6;
+                  
+                  const dayColors = [
+                    'bg-red-50 border-red-100',    // Sun
+                    'bg-yellow-50 border-yellow-100', // Mon
+                    'bg-pink-50 border-pink-100',    // Tue
+                    'bg-emerald-50 border-emerald-100', // Wed
+                    'bg-orange-50 border-orange-100', // Thu
+                    'bg-sky-50 border-sky-100',   // Fri
+                    'bg-purple-50 border-purple-100', // Sat
+                  ];
+
                   return (
                     <div 
                       key={dateId} 
                       onClick={() => openNoteEditor(day, note?.content || '')}
                       className={`relative flex flex-col p-1 md:p-2 rounded-lg md:rounded-xl border transition-all min-h-[75px] md:min-h-[100px] cursor-pointer group active:scale-95
-                        ${isToday(day) ? `bg-white border-2 ${theme.border} ring-2 ring-white shadow-md z-10 scale-105` : 'border-gray-100 bg-white/60 hover:bg-white hover:border-gray-200 shadow-sm'}`}
+                        ${isToday(day) 
+                          ? `bg-white border-2 ${theme.border} ring-2 ring-white shadow-md z-10 scale-105` 
+                          : note?.content 
+                            ? `${dayColors[dayOfWeek]} shadow-inner` 
+                            : 'border-gray-100 bg-white/60 hover:bg-white hover:border-gray-200 shadow-sm'}`}
                     >
                       <span className={`text-[10px] md:text-xs font-bold mb-1 ${isSunSat ? theme.textMuted : 'text-gray-500'}`}>{format(day, 'd')}</span>
                       <div className="flex-grow text-[9px] md:text-xs text-gray-600 overflow-hidden leading-tight line-clamp-3 md:line-clamp-none break-words whitespace-pre-wrap">
