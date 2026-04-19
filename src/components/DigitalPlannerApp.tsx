@@ -2,41 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { 
   Home, CalendarDays, Target, Heart, Lightbulb, Flower2,
   BookOpen, CheckCircle2, Circle, ChevronLeft, ChevronRight,
-  Plus, Image as ImageIcon, LogOut, Loader2, Trash2,
+  Plus, Image as ImageIcon, Loader2, Trash2,
   Type, Move, Palette, ChevronDown
 } from 'lucide-react';
-import { auth, db, loginWithGoogle, logout } from '../firebase';
-import { useAuthState } from 'react-firebase-hooks/auth';
+import { db } from '../firebase';
 import { collection, doc, onSnapshot, query, setDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, addDoc } from 'firebase/firestore';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isToday, addMonths, subMonths } from 'date-fns';
 import { motion } from 'motion/react';
 
 export default function App() {
-  const [user, loading] = useAuthState(auth);
-
-  if (loading) {
-    return <div className="h-screen flex items-center justify-center bg-gray-50"><Loader2 className="animate-spin text-gray-400 w-8 h-8" /></div>;
-  }
-
-  if (!user) {
-    return (
-      <div className="h-screen flex flex-col items-center justify-center bg-rose-50 font-sans">
-        <div className="bg-white p-10 rounded-3xl shadow-xl flex flex-col items-center text-center max-w-sm w-full">
-          <BookOpen className="w-16 h-16 text-rose-300 mb-6" />
-          <h1 className="text-3xl font-display font-bold text-gray-800 tracking-tight mb-2">Personal Digital <span className="text-rose-400">Planner</span></h1>
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-[0.3em] mb-8">Design your life</p>
-          <button 
-            onClick={loginWithGoogle}
-            className="w-full py-3 px-4 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-bold transition-colors shadow-md hover:shadow-lg flex items-center justify-center gap-2"
-          >
-            Sign in with Google
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return <DigitalPlannerApp userId={user.uid} />;
+  return <DigitalPlannerApp userId="default-user" />;
 }
 
 function DigitalPlannerApp({ userId }: { userId: string }) {
@@ -151,13 +126,6 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
               )}
            </div>
 
-           <button 
-             onClick={logout}
-             className="p-2 md:p-3 rounded-xl hover:bg-gray-50 text-gray-400 transition-all active:scale-95"
-             title="Logout"
-           >
-             <LogOut className="w-5 h-5 md:w-6 md:h-6" />
-           </button>
         </div>
       </div>
     );
@@ -174,7 +142,7 @@ function DigitalPlannerApp({ userId }: { userId: string }) {
               <h3 className="font-bold text-gray-400 text-xs tracking-widest uppercase mb-3 border-b pb-2">Yearly Pages</h3>
               <ul className="space-y-3 text-gray-700 text-sm font-medium">
                 {[
-                  {label: '2026 Calendar', tab:'calendar'}, 
+                  {label: 'Calendar', tab:'calendar'}, 
                   {label: 'Mission of the Year', tab:'mission'}, 
                   {label: 'Room of Memories', tab:'memories'}
                 ].map(item => (
