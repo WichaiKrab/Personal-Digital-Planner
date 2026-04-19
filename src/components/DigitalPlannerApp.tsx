@@ -364,25 +364,25 @@ function DigitalPlannerApp({ userId, userEmail }: { userId: string, userEmail: s
                 <div className={`mt-0.5 cursor-pointer transition-colors ${habit.completed ? theme.text : 'text-gray-300 group-hover:text-gray-400'}`} onClick={() => toggleHabit(habit)}>
                   {habit.completed ? <CheckCircle2 size={24} /> : <Circle size={24} />}
                 </div>
-                <input 
-                  type="text"
+                <textarea 
                   key={`${habit.id}-${habit.text}`}
                   defaultValue={habit.text}
                   onBlur={(e) => updateHabitText(habit.id, e.target.value)}
-                  className={`text-sm md:text-base flex-1 leading-tight bg-transparent border-none outline-none focus:ring-1 focus:ring-rose-100 rounded px-1 ${habit.completed ? 'text-gray-400 line-through' : 'text-gray-700'}`}
+                  rows={2}
+                  className={`text-sm md:text-base flex-1 leading-snug bg-transparent border-none outline-none focus:ring-1 focus:ring-rose-100 rounded px-1 resize-none ${habit.completed ? 'text-gray-400 line-through' : 'text-gray-700'}`}
                 />
                 <button onClick={() => deleteHabit(habit.id)} className="text-gray-300 hover:text-red-500 transition-colors p-1"><Trash2 size={16}/></button>
               </div>
             ))}
             {isAddingGoal && (
                <form onSubmit={handleAddHabit} className="flex flex-col gap-2 p-3 bg-gray-50 rounded-xl border border-gray-200 animate-in slide-in-from-top-2">
-                  <input 
+                  <textarea 
                     autoFocus
-                    type="text" 
                     value={newGoal}
                     onChange={(e) => setNewGoal(e.target.value)}
                     placeholder="Type your goal..."
-                    className="w-full bg-white border border-gray-100 rounded-lg p-3 text-sm outline-none focus:ring-2 ring-rose-200"
+                    rows={3}
+                    className="w-full bg-white border border-gray-100 rounded-lg p-3 text-sm outline-none focus:ring-2 ring-rose-200 resize-none"
                   />
                   <div className="flex gap-2">
                     <button type="submit" className={`flex-1 ${theme.primary} py-2 rounded-lg text-xs font-bold`}>Save</button>
@@ -499,7 +499,7 @@ function DigitalPlannerApp({ userId, userEmail }: { userId: string, userEmail: s
           <h2 className={`text-xl md:text-3xl font-display font-bold ${theme.text} uppercase tracking-widest`}>Mission {selectedYear}</h2>
           <span className="text-gray-400 font-medium tracking-widest text-sm md:text-base">{selectedYear}</span>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 flex-grow overflow-y-auto pr-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 flex-grow overflow-y-auto pr-1">
           {fullMonths.map((m) => {
             const missionDoc = missions.find(x => x.month === m);
             return (
@@ -511,7 +511,7 @@ function DigitalPlannerApp({ userId, userEmail }: { userId: string, userEmail: s
                 <div className={`h-1.5 md:h-2 shrink-0 ${theme.primary} transition-colors group-hover:bg-rose-300`}></div>
                 <div className="p-2 md:p-3 flex-grow flex flex-col">
                   <h3 className="text-center font-bold text-gray-500 text-[10px] md:text-xs uppercase tracking-wider mb-2">{m}</h3>
-                  <div className="flex-grow text-[11px] md:text-sm text-gray-700 leading-tight line-clamp-4 overflow-hidden italic whitespace-pre-wrap">
+                  <div className="flex-grow text-[11px] md:text-sm text-gray-700 leading-tight italic whitespace-pre-wrap break-words">
                     {missionDoc?.missionText ? `${missionDoc.missionText}` : <span className="text-gray-300 font-normal">Tap to add mission...</span>}
                   </div>
                 </div>
@@ -721,8 +721,8 @@ function DigitalPlannerApp({ userId, userEmail }: { userId: string, userEmail: s
     return (
       <div className={`min-h-[500px] h-[calc(100vh-200px)] md:h-[600px] p-6 rounded-3xl ${theme.surface} border ${theme.border} flex flex-col relative overflow-hidden`}
            style={{ backgroundImage: 'radial-gradient(#cbd5e1 1.5px, transparent 1.5px)', backgroundSize: '32px 32px' }}>
-        <div className="absolute top-2 right-2 md:top-4 md:right-4 bg-white/90 backdrop-blur-sm px-3 py-2 md:px-6 md:py-3 rounded-2xl md:rounded-full shadow-md z-30 flex items-center gap-2 md:gap-4 max-w-[calc(100%-1rem)]">
-          <h2 className={`text-xs md:text-lg font-display font-bold ${theme.text} uppercase tracking-widest truncate`}>Room of Memories {selectedYear}</h2>
+        <div className="absolute top-3 right-3 md:top-4 md:right-4 bg-white/90 backdrop-blur-sm px-3 py-2 md:px-6 md:py-3 rounded-2xl md:rounded-full shadow-md z-30 flex items-center gap-2 md:gap-4 max-w-[calc(100%-2rem)]">
+          <h2 className={`text-[10px] sm:text-xs md:text-lg font-display font-bold ${theme.text} uppercase tracking-widest truncate min-w-0`}>Room of Memories {selectedYear}</h2>
           <div className="flex gap-1 md:gap-2 shrink-0">
              <button onClick={() => addMemory('photo')} className={`p-1.5 md:p-2 rounded-full ${theme.primary} hover:scale-110 active:scale-95 transition-all text-gray-800 shadow-sm`} title="Add Photo"><ImageIcon size={14}/><span className="hidden md:inline md:ml-1 md:hidden">Photo</span></button>
              <button onClick={() => addMemory('note')} className={`p-1.5 md:p-2 rounded-full ${theme.primary} hover:scale-110 active:scale-95 transition-all text-gray-800 shadow-sm`} title="Add Note"><Type size={14}/><span className="hidden md:inline md:ml-1 md:hidden">Note</span></button>
@@ -838,7 +838,7 @@ function DigitalPlannerApp({ userId, userEmail }: { userId: string, userEmail: s
     return (
       <div className={`h-full p-6 md:p-8 rounded-3xl ${theme.surface} border ${theme.border} shadow-sm animate-in fade-in flex flex-col`}>
         <h2 className={`text-xl md:text-2xl font-display font-bold mb-6 ${theme.text} uppercase tracking-widest text-center`}>Key Date {selectedYear}</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 flex-grow overflow-auto pb-4 pr-1">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 flex-grow overflow-auto pb-4 pr-1">
           {fullMonths.map((month) => (
             <div key={month} className="flex flex-col border border-gray-200 rounded-2xl overflow-hidden bg-white shadow-md hover:shadow-lg transition-all">
               <div className={`py-2 md:py-3 text-center font-bold text-xs md:text-sm uppercase tracking-widest bg-gray-50 border-b border-gray-200 text-gray-800`}>{month}</div>
@@ -852,12 +852,12 @@ function DigitalPlannerApp({ userId, userEmail }: { userId: string, userEmail: s
                     <div 
                         key={line} 
                         onClick={() => openKeyDateEditor(month, line, data)}
-                        className="flex min-h-[36px] md:h-10 border-b border-gray-100 last:border-0 hover:bg-rose-50/30 cursor-pointer transition-colors items-center" 
+                        className="flex min-h-[36px] md:min-h-[40px] h-auto border-b border-gray-100 last:border-0 hover:bg-rose-50/30 cursor-pointer transition-colors items-center py-2 md:py-3" 
                     >
-                      <div className="w-10 md:w-12 border-r border-gray-100 h-full flex items-center justify-center text-[10px] md:text-xs font-bold text-gray-800 shrink-0">
+                      <div className="w-10 md:w-12 border-r border-gray-100 h-full flex items-center justify-center text-[10px] md:text-xs font-bold text-gray-800 shrink-0 px-1 break-all text-center">
                          {data?.date || <span className="text-gray-200">-</span>}
                       </div>
-                      <div className="flex-1 px-2 md:px-3 text-[11px] md:text-sm text-gray-700 truncate">
+                      <div className="flex-1 px-2 md:px-3 text-[11px] md:text-sm text-gray-700 break-all whitespace-pre-wrap min-w-0">
                          {data?.event || <span className="text-gray-200">...</span>}
                       </div>
                     </div>
@@ -1011,13 +1011,13 @@ function DigitalPlannerApp({ userId, userEmail }: { userId: string, userEmail: s
                   <div 
                     key={item.id} 
                     onClick={() => openSubEditor(item)}
-                    className="flex border-b border-gray-100 h-10 hover:bg-blue-50 transition-colors cursor-pointer group"
+                    className="flex border-b border-gray-100 min-h-[40px] h-auto hover:bg-blue-50 transition-colors cursor-pointer group py-2"
                   >
                     <div className="w-10 shrink-0 flex items-center justify-center text-[10px] md:text-xs font-bold text-gray-300 bg-gray-50/30 group-hover:text-blue-500">{i + 1}</div>
-                    <div className="w-1/3 border-r border-l border-gray-100 flex items-center px-2 md:px-3 text-[11px] md:text-sm font-medium text-gray-700 truncate">
+                    <div className="w-1/3 border-r border-l border-gray-100 flex items-center px-2 md:px-3 text-[11px] md:text-sm font-medium text-gray-700 break-all">
                       {item.platform || <span className="text-gray-200">-</span>}
                     </div>
-                    <div className="flex-1 flex items-center px-2 md:px-3 text-[11px] md:text-sm text-gray-600 truncate">
+                    <div className="flex-1 flex items-center px-2 md:px-3 text-[11px] md:text-sm text-gray-600 break-all">
                       {item.channel || <span className="text-gray-200 italic font-normal">...</span>}
                     </div>
                   </div>
@@ -1037,10 +1037,10 @@ function DigitalPlannerApp({ userId, userEmail }: { userId: string, userEmail: s
                   <div 
                     key={item.id} 
                     onClick={() => openMemEditor(item)}
-                    className="flex border-b border-gray-100 h-10 hover:bg-teal-50 transition-colors cursor-pointer group"
+                    className="flex border-b border-gray-100 min-h-[40px] h-auto hover:bg-teal-50 transition-colors cursor-pointer group py-2"
                   >
                     <div className="w-10 shrink-0 flex items-center justify-center text-[10px] md:text-xs font-bold text-gray-300 bg-gray-50/30 group-hover:text-teal-600">{i + 1}</div>
-                    <div className="flex-1 border-r border-l border-gray-100 flex items-center px-2 md:px-3 text-[11px] md:text-sm font-medium text-gray-700 truncate">
+                    <div className="flex-1 border-r border-l border-gray-100 flex items-center px-2 md:px-3 text-[11px] md:text-sm font-medium text-gray-700 break-all">
                       {item.channel || <span className="text-gray-200">-</span>}
                     </div>
                     <div className="w-20 md:w-24 flex items-center justify-center text-[10px] md:text-xs font-bold text-teal-600 uppercase">
